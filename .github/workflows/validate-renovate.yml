@@ -7,7 +7,7 @@ on:
       - ".github/workflows/renovate.yml"
   push:
     branches:
-      - main
+      - master
     paths:
       - ".github/renovate.json5"
       - ".github/workflows/renovate.yml"
