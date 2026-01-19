@@ -124,64 +124,6 @@ sudo systemctl reboot
 
 After enabling GitHub Actions and getting your first successful build, complete these steps to prepare your operating system for production use.
 
-### Step 1: Generate and Configure Cosign Keys
-
-Image signing provides cryptographic verification of your images and is required for production use.
-
-**1. Install Cosign (if not already installed):**
-
-```bash
-brew install cosign
-```
-
-**2. Generate signing key pair:**
-
-```bash
-cosign generate-key-pair
-```
-
-You'll be prompted to enter a password to protect your private key. Choose a strong password and remember it.
-
-This creates two files:
-
-- `cosign.key` (private key) - **Keep this secret! Never commit to repository!**
-- `cosign.pub` (public key) - This will be committed to your repository
-
-**3. Add the private key to GitHub Secrets:**
-
-Your private key must be stored securely in GitHub Secrets so the workflow can sign images.
-
-   a. Copy the entire contents of `cosign.key`:
-      ```bash
-      cat cosign.key
-      ```
-
-   b. Go to your repository on GitHub: `https://github.com/JacobTheEldest/holdfast`
-
-   c. Navigate to **Settings** → **Secrets and variables** → **Actions**
-      - Direct link: `https://github.com/JacobTheEldest/holdfast/settings/secrets/actions`
-
-   d. Click **"New repository secret"**
-
-   e. Configure the secret:
-      - **Name:** `SIGNING_SECRET`
-      - **Value:** Paste the entire contents of `cosign.key` (including the BEGIN and END lines)
-
-   f. Click **"Add secret"**
-
-**4. Update the public key in your repository:**
-
-Replace the placeholder public key with your actual public key:
-
-```bash
-# Copy your public key to the repository
-cat cosign.pub > /path/to/holdfast/cosign.pub
-cd /path/to/holdfast
-git add cosign.pub
-git commit -m "Add cosign public key for image signing"
-git push
-```
-
 **5. Enable signing in the workflow:**
 
 The build workflow has signing disabled by default. To enable it:
