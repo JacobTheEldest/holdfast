@@ -1,4 +1,4 @@
-# Copilot Instructions for finpilot bootc Image Template
+# Copilot Instructions for holdfast bootc Image
 
 ## CRITICAL: GitHub API Usage
 
@@ -17,84 +17,22 @@
 2. **Shellcheck** - `shellcheck *.sh` on all modified shell files
 3. **YAML validation** - `python3 -c "import yaml; yaml.safe_load(open('file.yml'))"` on all modified YAML
 4. **Justfile syntax** - `just --list` to verify
-5. **Confirm with user** - Always confirm before committing and pushing
+5. **Make atomic commits** - One logical change per commit, with clear messages. Use jujutsu (`jj`) cli instead of `git`
+6. **Confirm with user before touching remote** - Always confirm before pushing or making any changes to a remote
 
 **Never commit files with syntax errors.**
 
 ### REQUIRED: Conventional Commit Format
 
-**ALL commits MUST use conventional commits format**
-
-```
+```plaintext
 <type>[optional scope]: <description>
 ```
-
-## CRITICAL: Template Initialization
-
-**When this repository is used as a template, you MUST:**
-
-### 1. Rename ALL instances of `finpilot`
-
-**Source of truth**: `Containerfile` line 9: `# Name: finpilot`
-
-**Files to update:**
-
-- `Containerfile` (line 9)
-- `Justfile` (line 1)
-- `README.md` (line 1)
-- `artifacthub-repo.yml` (line 5)
-- `custom/ujust/README.md` (~line 175)
-- `.github/workflows/ghcr-pruner.yml` (line 22)
-
-### 2. Create "What's Different" section in README
-
-**CRITICAL**: Add this section near the top of README.md (after the title/intro, before detailed docs):
-
-```markdown
-## What Makes this Raptor Different?
-
-Here are the changes from [Base Image Name]. This image is based on [Bluefin/Bazzite/Aurora/etc] and includes these customizations:
-
-### Added Packages (Build-time)
-- **System packages**: tmux, micro, mosh - [brief explanation of why]
-
-### Added Applications (Runtime)
-- **CLI Tools (Homebrew)**: neovim, helix - [brief explanation]
-- **GUI Apps (Flatpak)**: Spotify, Thunderbird - [brief explanation]
-
-### Removed/Disabled
-- List anything removed from base image
-
-### Configuration Changes
-- Any systemd services enabled/disabled
-- Desktop environment changes
-- Other notable modifications
-
-*Last updated: [date]*
-```
-
-**Maintenance requirement**:
-
-- **ALWAYS update this section when you modify packages or configuration**
-- Keep descriptions brief and user-focused (explain "why", not just "what")
-- Write for typical Linux users, not developers
-- Update the "Last updated" date with each change
-
-### 3. Verify copilot instructions are present
-
-Confirm `.github/copilot-instructions.md` exists in the new repository. This file should be automatically copied when using this as a GitHub template.
-
-### 4. Explain signing is optional
-
-Signing is DISABLED by default. First builds succeed immediately. Enable later for production (see README).
-
-**These 4 steps are REQUIRED for every new template instance.**
 
 ---
 
 ## Repository Structure
 
-```
+```plaintext
 ├── Containerfile          # Main build definition (multi-stage build with OCI imports)
 ├── Justfile              # Local build automation (image name, build commands)
 ├── build/                # Build-time scripts (10-build.sh, 20-chrome.sh, etc.)
@@ -163,8 +101,6 @@ This template follows the **Bluefin architecture pattern** from @projectbluefin/
 - Renovate automatically updates `:latest` tags to **SHA digests** for reproducibility
 - All OCI resources are mounted at build-time via the `ctx` stage
 
-**Reference:** See [Bluefin Contributing Guide](https://docs.projectbluefin.io/contributing/) for architecture diagram
-
 ### Build-time vs Runtime
 
 - **Build-time** (`build/`): Baked into container. Use `dnf5 install`. Services, configs, system packages.
@@ -224,12 +160,6 @@ dnf5 install -y vim git htop neovim tmux
 - Dependencies required for other build-time operations
 - Packages that need to be available immediately on first boot
 - Services that need to be enabled with `systemctl enable`
-
-**Important**:
-
-- Always use `dnf5` (never `dnf`, `yum`, or `rpm-ostree`)
-- Always add `-y` flag for non-interactive installs
-- For COPR repositories, use `copr_install_isolated` pattern and disable after use
 - For third-party repos, see example scripts: `build/20-onepassword.sh.example`
 
 **Script Naming Convention**:
@@ -320,15 +250,15 @@ Branch=stable
 ## Quick Reference: Common User Requests
 
 | Request | Action | Location |
-|---------|--------|----------|
+| --------- | -------- | ---------- |
 | Add package (build-time) | `dnf5 install -y pkg` | `build/10-build.sh` |
 | Add package (runtime) | `brew "pkg"` | `custom/brew/default.Brewfile` |
 | Add GUI app | `[Flatpak Preinstall org.app.id]` | `custom/flatpaks/default.preinstall` |
 | Add user command | Create shortcut (NO dnf5) | `custom/ujust/*.just` |
 | Add third-party repo | Use example scripts | `build/20-*.sh.example` (rename) |
 | Replace desktop | Use example script | `build/30-cosmic-desktop.sh.example` |
-| Switch base image | Update FROM line | `Containerfile` line 38 |
-| Add OCI containers | Uncomment COPY --from= lines | `Containerfile` lines 13-18 (ctx stage) |
+| Switch base image | Update FROM line | `Containerfile` |
+| Add OCI containers | Uncomment COPY --from= lines | `Containerfile` ctx stage |
 | Test locally | `just build && just build-qcow2 && just run-vm-qcow2` | Terminal |
 | Deploy (production) | `sudo bootc switch ghcr.io/user/repo:stable` | Terminal |
 | Enable service | `systemctl enable service.name` | `build/10-build.sh` |
@@ -345,7 +275,8 @@ Branch=stable
 
 This template uses a **multi-stage build** following the @projectbluefin/distroless pattern.
 
-**Stage 1: Context (ctx) - Line 39**
+#### Stage 1: Context (ctx)
+
 Combines resources from multiple OCI containers:
 
 ```dockerfile
@@ -361,7 +292,7 @@ COPY --from=ghcr.io/ublue-os/artwork:latest /system_files /oci/artwork
 COPY --from=ghcr.io/ublue-os/brew:latest /system_files /oci/brew
 ```
 
-**Stage 2: Base Image - Line 52**
+#### Stage 2: Base Image
 
 ```dockerfile
 FROM ghcr.io/ublue-os/silverblue-main:latest  # Default (Fedora-based)
@@ -725,7 +656,7 @@ COSIGN_PASSWORD="" cosign generate-key-pair
 ## Troubleshooting
 
 | Symptom | Cause | Solution |
-|---------|-------|----------|
+| --------- | ------- | ---------- |
 | Build fails: "permission denied" | Signing misconfigured | Verify signing commented out OR `SIGNING_SECRET` set |
 | Build fails: "package not found" | Typo or unavailable | Check spelling, verify on RPMfusion, add COPR if needed |
 | Build fails: "base image not found" | Invalid FROM line | Check syntax in `Containerfile` line 24 |
