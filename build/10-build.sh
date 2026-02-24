@@ -2,6 +2,9 @@
 
 set -eoux pipefail
 
+# Enable nullglob for all glob operations to prevent failures on empty matches
+shopt -s nullglob
+
 ###############################################################################
 # Main Build Script
 ###############################################################################
@@ -12,6 +15,16 @@ set -eoux pipefail
 # Source helper functions
 # shellcheck source=/dev/null
 source /ctx/build/copr-helpers.sh
+
+echo "::group:: Copy Bluefin Config from Common"
+
+# Copy just files from @projectbluefin/common (includes 00-entry.just which imports 60-custom.just)
+mkdir -p /usr/share/ublue-os/just/
+shopt -s nullglob
+cp -r /ctx/oci/common/bluefin/usr/share/ublue-os/just/* /usr/share/ublue-os/just/
+shopt -u nullglob
+
+echo "::endgroup::"
 
 echo "::group:: Copy Custom Files"
 
@@ -46,5 +59,8 @@ systemctl enable podman.socket
 # Example: systemctl mask unwanted-service
 
 echo "::endgroup::"
+
+# Restore default glob behavior
+shopt -u nullglob
 
 echo "Custom build complete!"
