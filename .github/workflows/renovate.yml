@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - master
     paths:
       - '.github/renovate.json5'
       - '.github/workflows/renovate.yml'
@@ -28,5 +28,4 @@ jobs:
           configurationFile: .github/renovate.json5
           token: ${{ secrets.GITHUB_TOKEN }}
         env:
-          RENOVATE_REPOSITORIES: ${{ github.repository }}
           LOG_LEVEL: 'debug'

@@ -2,6 +2,9 @@
 
 set -eoux pipefail
 
+# Enable nullglob for all glob operations to prevent failures on empty matches
+shopt -s nullglob
+
 ###############################################################################
 # Main Build Script
 ###############################################################################
@@ -12,9 +15,6 @@ set -eoux pipefail
 # Source helper functions
 # shellcheck source=/dev/null
 source /ctx/build/copr-helpers.sh
-
-# Enable nullglob for all glob operations to prevent failures on empty matches
-shopt -s nullglob
 
 echo "::group:: Copy Bluefin Config from Common"
 
@@ -33,6 +33,7 @@ mkdir -p /usr/share/ublue-os/homebrew/
 cp /ctx/custom/brew/*.Brewfile /usr/share/ublue-os/homebrew/
 
 # Consolidate Just Files
+mkdir -p /usr/share/ublue-os/just/
 find /ctx/custom/ujust -iname '*.just' -exec printf "\n\n" \; -exec cat {} \; >> /usr/share/ublue-os/just/60-custom.just
 
 # Copy Flatpak preinstall files
