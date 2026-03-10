@@ -8,7 +8,8 @@
 contents = """
 %post
 # After installation, switch to the custom image from this repository
-bootc switch --mutate-in-place --transport registry ghcr.io/jacobtheeldest/holdfast:stable
+# IMPORTANT: Update this URL to match your repository (ghcr.io/USERNAME/REPO:stable)
+bootc switch --mutate-in-place --transport registry ghcr.io/USERNAME/REPO:stable
 %end
 """
 
