@@ -22,5 +22,9 @@ brew "htop"       # Interactive process viewer
 brew "tmux"       # Terminal multiplexer
 
 # Bold Brew - TUI for Homebrew
-tap "valkyrie00/bbrew"         
+tap "valkyrie00/bbrew"
 brew "valkyrie00/bbrew/bbrew"
+
+# AI coding agent
+tap "anomalyco/tap"
+brew "anomalyco/tap/opencode"
