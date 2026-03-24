@@ -50,6 +50,9 @@ echo "::group:: Install Packages"
 # Example using COPR with isolated pattern:
 # copr_install_isolated "ublue-os/staging" package-name
 
+# Ghostty terminal emulator
+copr_install_isolated "scottames/ghostty" ghostty
+
 echo "::endgroup::"
 
 echo "::group:: System Configuration"
@@ -57,6 +60,15 @@ echo "::group:: System Configuration"
 # Enable/disable systemd services
 systemctl enable podman.socket
 # Example: systemctl mask unwanted-service
+
+# Set ghostty as the default GNOME terminal
+mkdir -p /etc/dconf/db/local.d/
+cat > /etc/dconf/db/local.d/01-default-terminal << 'EOF'
+[org/gnome/desktop/default-applications/terminal]
+exec='ghostty'
+exec-arg=''
+EOF
+dconf update
 
 echo "::endgroup::"
 
