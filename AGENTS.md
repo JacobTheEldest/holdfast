@@ -1,4 +1,4 @@
-# Copilot Instructions for holdfast bootc Image
+# Instructions for holdfast bootc Image
 
 ## CRITICAL: GitHub API Usage
 
