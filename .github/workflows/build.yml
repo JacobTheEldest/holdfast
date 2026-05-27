@@ -107,26 +107,28 @@ jobs:
 
       - name: Build Image
         id: build_image
-        uses: redhat-actions/buildah-build@061ffd31bb5c3f8733a6f9bbdf00a9fb02eb708c # v2 (node24)
-        with:
-          containerfiles: |
-            ./Containerfile
-          # Postfix image name with -custom to make it a little more descriptive
-          # Syntax: https://docs.github.com/en/actions/learn-github-actions/expressions#format
-          image: ${{ env.IMAGE_NAME }}
-          tags: ${{ env.DEFAULT_TAG }}
-          labels: ${{ steps.metadata.outputs.labels }}
-          oci: false
+        env:
+          LABELS: ${{ steps.metadata.outputs.labels }}
+        run: |
+          LABEL_ARGS=()
+          while IFS= read -r label; do
+            [ -n "$label" ] && LABEL_ARGS+=(--label "$label")
+          done <<< "${LABELS}"
+          sudo podman build \
+            "${LABEL_ARGS[@]}" \
+            --format docker \
+            -t "${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}" \
+            -f ./Containerfile .
 
       - name: Rechunk Image
         run: |
+          IMAGE="localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           sudo podman run --rm --privileged \
             -v /var/lib/containers:/var/lib/containers \
-            --entrypoint /usr/libexec/bootc-base-imagectl \
-            "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}" \
-            rechunk --max-layers 96 \
-            "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}" \
-            "localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
+            quay.io/centos-bootc/centos-bootc:stream10 \
+            /usr/libexec/bootc-base-imagectl rechunk --max-layers 96 \
+            "${IMAGE}" "${IMAGE}"
+          sudo podman save "${IMAGE}" | podman load
 
       # Tag for registry
       - name: Tag for registry
