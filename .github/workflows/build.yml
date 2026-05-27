@@ -21,10 +21,6 @@ env:
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"  # do not edit
   DEFAULT_TAG: "stable"
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ inputs.brand_name}}-${{ inputs.stream_name }}
-  cancel-in-progress: true
-
 jobs:
   changes:
     name: Detect changes
@@ -47,10 +43,25 @@ jobs:
               - '.github/workflows/build.yml'
 
   build_push:
-    name: Build and push image
+    name: Build and push image (${{ matrix.image_flavor }})
     needs: changes
     if: always() && (needs.changes.result == 'skipped' || needs.changes.outputs.image == 'true')
     runs-on: ubuntu-24.04
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ matrix.image_flavor }}
+      cancel-in-progress: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image_flavor: base
+            base_image: ghcr.io/ublue-os/bluefin-dx:stable
+            image_suffix: ""
+          - image_flavor: nvidia-open
+            base_image: ghcr.io/ublue-os/bluefin-dx-nvidia-open:stable
+            image_suffix: "-nvidia-open"
 
     permissions:
       contents: read
@@ -60,19 +71,17 @@ jobs:
     steps:
       - name: Prepare environment
         run: |
-          # Lowercase the image uri
           echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
-          echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
+          echo "IMAGE_NAME=${IMAGE_NAME,,}${{ matrix.image_suffix }}" >> ${GITHUB_ENV}
 
       # These stage versions are pinned by https://github.com/renovatebot/renovate
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      # This is optional, but if you see that your builds are way too big for the runners, you can enable this by uncommenting the following lines:
-      # - name: Maximize build space
-      #   uses: ublue-os/remove-unwanted-software@517622d6452028f266b7ba4cc9a123b5f58a6b53 # v7
-      #   with:
-      #     remove-codeql: true
+      - name: Maximize build space
+        uses: ublue-os/remove-unwanted-software@517622d6452028f266b7ba4cc9a123b5f58a6b53 # v7
+        with:
+          remove-codeql: true
 
       - name: Mount BTRFS for podman storage
         id: container-storage-action
@@ -138,6 +147,7 @@ jobs:
           done <<< "${LABELS}"
           sudo podman build \
             "${LABEL_ARGS[@]}" \
+            --build-arg BASE_IMAGE=${{ matrix.base_image }} \
             --format docker \
             -t "${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}" \
             -f ./Containerfile .
@@ -242,3 +252,15 @@ jobs:
       #       --type spdxjson \
       #       --key env://COSIGN_PRIVATE_KEY \
       #       "${IMAGE}@${DIGEST}"
+
+  gate:
+    name: Build gate
+    if: always()
+    needs: [build_push]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.build_push.result }}" == "failure" || "${{ needs.build_push.result }}" == "cancelled" ]]; then
+            exit 1
+          fi
