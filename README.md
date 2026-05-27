@@ -35,9 +35,16 @@ All `build/[0-9]*-*.sh` scripts run automatically in alphanumeric order. See [`b
 
 ## Development Workflow
 
-1. Open a pull request — CI validates Brewfiles, Flatpaks, Justfiles, shell scripts, and builds a test image
-2. Merge to `master` — triggers a `:stable` image build and push to GHCR
-3. Renovate keeps base images, OCI imports, and Actions up to date automatically
+1. Open a pull request (`gh pr create --base master --head <branch_name> --fill`). CI validates Brewfiles, Flatpaks, Justfiles, shell scripts, and builds a test image
+
+  a. `master` is protected
+  a.  Auto-merge is enabled so PRs land as soon as checks pass.
+
+1. Merge to `master` (`gh pr merge <branch_name> --auto --merge`).
+
+  a. Triggers a `:stable` image build and push to GHCR
+
+Renovate keeps base images, OCI imports, and Actions up to date automatically.
 
 ## Syncing Upstream Template
 
