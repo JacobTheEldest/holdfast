@@ -26,8 +26,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect changes
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      image: ${{ steps.filter.outputs.image }}
+    steps:
+      - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        id: filter
+        with:
+          filters: |
+            image:
+              - 'Containerfile'
+              - 'build/**'
+              - 'custom/**'
+              - '.github/workflows/build.yml'
+
   build_push:
     name: Build and push image
+    needs: changes
+    if: always() && (needs.changes.result == 'skipped' || needs.changes.outputs.image == 'true')
     runs-on: ubuntu-24.04
 
     permissions:
