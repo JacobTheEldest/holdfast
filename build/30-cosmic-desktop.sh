@@ -6,8 +6,9 @@ set -eoux pipefail
 # COSMIC Desktop (alongside GNOME)
 ###############################################################################
 # Installs System76's COSMIC desktop from the ryanabx/cosmic-epoch COPR.
-# GDM remains the display manager — users pick COSMIC from the session chooser.
-# Based on: github.com/ericrocha97/bluefin
+# Switches display manager from GDM to cosmic-greeter (greetd-based) so that
+# cosmic-comp can acquire DRM master — GDM doesn't hand it off properly.
+# Both GNOME and COSMIC sessions remain selectable at login.
 ###############################################################################
 
 # shellcheck source=/dev/null
@@ -75,4 +76,11 @@ ls -la /usr/share/wayland-sessions/ || true
 
 echo "::endgroup::"
 
-echo "COSMIC desktop installed — select 'COSMIC' at the GDM login screen"
+echo "::group:: Switch display manager to cosmic-greeter"
+
+systemctl disable gdm
+systemctl enable cosmic-greeter
+
+echo "::endgroup::"
+
+echo "COSMIC desktop installed — select session at the cosmic-greeter login screen"
