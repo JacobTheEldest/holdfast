@@ -74,7 +74,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
-    /ctx/build/10-build.sh
+    bash -c 'for script in /ctx/build/[0-9]*-*.sh; do echo "Running: ${script}" && bash "${script}"; done'
     
 ### LINTING
 ## Verify final image and contents are correct.
