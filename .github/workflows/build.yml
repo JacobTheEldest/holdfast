@@ -144,7 +144,7 @@ jobs:
         run: |
           OCI_DIR="$(mktemp -d)"
           mkdir -p ${OCI_DIR}/rootfs
-          podman container create --replace --name sbom-tmp "localhost/${IMAGE}:${DEFAULT_TAG}"
+          podman container create --replace --name sbom-tmp "localhost/${IMAGE}:${DEFAULT_TAG}" /bin/bash
           podman export sbom-tmp | tar -C ${OCI_DIR}/rootfs -xf -
           podman container rm sbom-tmp
           OUTPUT_PATH="$(mktemp -d)/sbom.json"
