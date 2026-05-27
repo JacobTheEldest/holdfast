@@ -39,6 +39,44 @@ All `build/[0-9]*-*.sh` scripts run automatically in alphanumeric order. See [`b
 2. Merge to `master` — triggers a `:stable` image build and push to GHCR
 3. Renovate keeps base images, OCI imports, and Actions up to date automatically
 
+## Syncing Upstream Template
+
+Holdfast tracks [`projectbluefin/finpilot`](https://github.com/projectbluefin/finpilot) as `upstream`. To pull in template changes:
+
+```bash
+jj git fetch --remote upstream                          # Fetch upstream commits
+jj log -r 'master..main@upstream'                       # Review what's new
+jj rebase -s 'fork_point(master, main@upstream)+' \
+          -d main@upstream                              # Rebase local commits onto upstream tip
+jj bookmark move master --to <tip-change-id>            # Advance master to the rebased tip
+```
+
+Resolve any conflicts with `jj resolve`, then validate locally (`shellcheck build/*.sh`, `just --list`, `just build`) before pushing.
+
+First-time setup if `upstream` isn't configured:
+
+```bash
+jj git remote add upstream git@github.com:projectbluefin/finpilot.git
+jj bookmark track main@upstream
+```
+
+## Contributing Upstream
+
+To send a fix or improvement back to `projectbluefin/finpilot`:
+
+```bash
+jj git fetch --remote upstream                          # Ensure upstream is current
+jj new main@upstream                                    # Start a topic branch off upstream
+jj duplicate <change-id> --destination @                # Copy your commit onto it
+jj bookmark create contrib/<short-name> -r <new-id>     # Name the branch
+jj git push --remote origin --bookmark contrib/<short-name>
+
+gh pr create --repo projectbluefin/finpilot \
+  --base main --head jacobtheeldest:contrib/<short-name>
+```
+
+`duplicate` leaves the original commit in your master chain, so the fix stays in your image while the PR is in review.
+
 ## Local Testing
 
 ```bash
