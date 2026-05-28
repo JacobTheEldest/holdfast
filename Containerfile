@@ -26,6 +26,9 @@
 # See: https://docs.projectbluefin.io/contributing/ for architecture diagram
 ###############################################################################
 
+# Base image ARG — override at build time for variants (e.g. nvidia-open)
+ARG BASE_IMAGE="ghcr.io/ublue-os/bluefin-dx:stable"
+
 # Context stage - combine local and imported OCI container resources
 FROM scratch AS ctx
 
@@ -36,17 +39,13 @@ COPY custom /custom
 COPY --from=ghcr.io/projectbluefin/common:latest /system_files /oci/common
 COPY --from=ghcr.io/ublue-os/brew:latest /system_files /oci/brew
 
-# Base Image - GNOME included
-# FROM ghcr.io/ublue-os/silverblue-main:latest
+FROM ${BASE_IMAGE}
 
-FROM ghcr.io/ublue-os/bluefin-dx:stable
-
-## Alternative base images, no desktop included (uncomment to use):
-# FROM ghcr.io/ublue-os/base-main:latest    
-# FROM quay.io/centos-bootc/centos-bootc:stream10
-
-## Alternative GNOME OS base image (uncomment to use):
-# FROM quay.io/gnome_infrastructure/gnome-build-meta:gnomeos-nightly
+## Alternative base images (pass via --build-arg BASE_IMAGE=...):
+# ghcr.io/ublue-os/bluefin-dx-nvidia-open:stable  (NVIDIA open drivers)
+# ghcr.io/ublue-os/silverblue-main:latest          (plain GNOME)
+# ghcr.io/ublue-os/base-main:latest                (no desktop)
+# quay.io/centos-bootc/centos-bootc:stream10        (CentOS-based)
 
 ### /opt
 ## Some bootable images, like Fedora, have /opt symlinked to /var/opt, in order to
