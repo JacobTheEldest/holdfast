@@ -153,6 +153,7 @@ jobs:
             -f ./Containerfile .
 
       - name: Rechunk Image
+        if: github.event_name != 'pull_request'
         run: |
           IMAGE="localhost/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}"
           sudo podman run --rm --privileged \
