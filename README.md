@@ -24,7 +24,7 @@ sudo systemctl reboot
 | What | Where |
 | --- | --- |
 | System packages | [`build/10-build.sh`](build/10-build.sh) — `dnf5 install -y pkg` |
-| COPR packages | [`build/copr-helpers.sh`](build/copr-helpers.sh) — `copr_install_isolated "owner/repo" pkg` |
+| COPR packages | [`build/helpers/copr.sh`](build/helpers/copr.sh) — `copr_install_isolated "owner/repo" pkg` |
 | Desktop sessions | [`build/30-cosmic-desktop.sh`](build/30-cosmic-desktop.sh) for the pattern |
 | CLI tools (runtime) | [`custom/brew/*.Brewfile`](custom/brew/) |
 | GUI apps (runtime) | [`custom/flatpaks/*.preinstall`](custom/flatpaks/) |

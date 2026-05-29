@@ -14,7 +14,7 @@ shopt -s nullglob
 
 # Source helper functions
 # shellcheck source=/dev/null
-source /ctx/build/copr-helpers.sh
+source /ctx/build/helpers/copr.sh
 
 echo "::group:: Copy Bluefin Config from Common"
 

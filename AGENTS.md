@@ -30,7 +30,8 @@ Never commit files with syntax errors.
 │   ├── 10-build.sh                  # Main: packages, services, config
 │   ├── 30-cosmic-desktop.sh         # COSMIC desktop (additive, alongside GNOME)
 │   ├── *.sh.example                 # Templates — rename to .sh to activate
-│   └── copr-helpers.sh              # COPR helper functions (sourced, not run directly)
+│   └── helpers/                     # Sourced helper libraries (not run directly)
+│       └── copr.sh                  # COPR helper functions
 ├── custom/                          # Runtime customizations (post-deploy/first boot)
 │   ├── brew/*.Brewfile              # Homebrew packages (default, development, fonts)
 │   ├── flatpaks/*.preinstall        # Flatpak apps (installed post-first-boot)
@@ -53,7 +54,7 @@ Never commit files with syntax errors.
 Always align with `@ublue-os/bluefin` patterns unless user explicitly approves deviation.
 
 - `dnf5` only (never `dnf`, `yum`, `rpm-ostree`); always with `-y`
-- COPR: use `copr_install_isolated` from `build/copr-helpers.sh` (enables, disables, installs with `--enablerepo`)
+- COPR: use `copr_install_isolated` from `build/helpers/copr.sh` (enables, disables, installs with `--enablerepo`)
 - Never use `dnf5` in ujust files
 - Validate Flatpak IDs on <https://flathub.org/>
 
@@ -97,7 +98,7 @@ When implementing customizations, prefer this order:
 
 ### Do Not Modify (unless required)
 
-`.github/renovate.json5`, `.github/workflows/validate-*.yml`, `build/copr-helpers.sh`, `cosign.pub`
+`.github/renovate.json5`, `.github/workflows/validate-*.yml`, `build/helpers/copr.sh`, `cosign.pub`
 
 ### Modify with Extreme Caution
 

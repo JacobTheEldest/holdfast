@@ -12,7 +12,7 @@ set -eoux pipefail
 ###############################################################################
 
 # shellcheck source=/dev/null
-source /ctx/build/copr-helpers.sh
+source /ctx/build/helpers/copr.sh
 
 COSMIC_PACKAGES=(
     cosmic-session
