@@ -1,20 +1,41 @@
 # Brewfile for development tools
 # Uncomment packages you want to install
 
+# AI coding agents
+cask "claude-code"
+tap "anomalyco/tap"
+brew "anomalyco/tap/opencode"
+
+# Editors
+# NOTE: bluefin-dx already installs VS Code via the Microsoft RPM repo.
+# cask "visual-studio-code-linux"
+cask "zed-linux"
+
 # Container and orchestration tools
 # brew "kind"           # Kubernetes in Docker
 brew "kubectl"        # Kubernetes CLI
 brew "k9s"            # Kubernetes TUI
 brew "helm"           # Kubernetes package manager
+brew "devcontainer"   # devcontainer CLI
 
-# Cloud tools
+# Cloud / secrets / sync
 brew "awscli"         # AWS CLI
 # brew "azure-cli"      # Azure CLI
+brew "rclone"         # cloud storage sync
+brew "sops"           # secrets management (age/PGP-encrypted files)
+
+# Version & runtime management
+brew "mise"           # polyglot version manager (asdf-compatible)
 
 # Programming languages and tools
+# Global runtimes — mise owns project-specific versions.
+# Use unversioned formula names so brew floats us through minor bumps when
+# the default rolls forward (e.g. python@3.14 → @3.15). Pin to @x.y if a
+# specific version is required for a system-level tool.
 # brew "go"             # Go programming language
-brew "node"           # Node.js
-brew "python@3.12"    # Python
+brew "node"           # Node.js (current LTS-tracking default)
+brew "python"         # Python 3 (current brew default)
+# brew "go"             # Go programming language
 # brew "rust"           # Rust programming language
 
 # Build tools
