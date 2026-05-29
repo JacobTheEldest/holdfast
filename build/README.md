@@ -1,77 +1,26 @@
 # Build Scripts
 
-This directory contains build scripts that run during image creation. Scripts are executed in numerical order.
-
-## How It Works
-
-Scripts are named with a number prefix (e.g., `10-build.sh`, `20-onepassword.sh`) and run in ascending order during the container build process.
-
-## Included Scripts
-
-- **`10-build.sh`** - Main build script for base system modifications, package installation, and service configuration
-
-## Example Scripts
-
-- **`20-onepassword.sh.example`** - Example showing how to install software from third-party RPM repositories (Google Chrome, 1Password)
-
-To use an example script:
-1. Remove the `.example` extension
-2. Make it executable: `chmod +x build/20-yourscript.sh`
-3. The build system will automatically run it in numerical order
-
-## Creating Your Own Scripts
-
-Create numbered scripts for different purposes:
+Scripts in this directory are executed during image build by the loop in [`Containerfile`](../Containerfile):
 
 ```bash
-# 10-build.sh - Base system (already exists)
-# 20-drivers.sh - Hardware drivers  
-# 30-development.sh - Development tools
-# 40-gaming.sh - Gaming software
-# 50-cleanup.sh - Final cleanup tasks
+for script in /ctx/build/[0-9]*-*.sh; do bash "${script}"; done
 ```
 
-### Script Template
+Only files matching `[0-9]*-*.sh` at the top level run; subdirectories (e.g. [`helpers/`](helpers/)) are for sourced libraries.
 
-```bash
-#!/usr/bin/env bash
-set -oue pipefail
+## Layout
 
-echo "Running custom setup..."
-# Your commands here
-```
+- **`10-build.sh`** — base system: package installs, services, dconf, ujust/Brewfile/Flatpak file staging
+- **`30-cosmic-desktop.sh`** — additive COSMIC desktop install (alongside GNOME) and display manager switch
+- **`helpers/copr.sh`** — `copr_install_isolated` for COPR packages without persisting the repo
 
-### Best Practices
+## Conventions
 
-- **Use descriptive names**: `20-nvidia-drivers.sh` is better than `20-stuff.sh`
-- **One purpose per script**: Easier to debug and maintain
-- **Clean up after yourself**: Remove temporary files and disable temporary repos
-- **Test incrementally**: Add one script at a time and test builds
-- **Comment your code**: Future you will thank present you
+- `dnf5 -y` only (no `dnf`, `yum`, `rpm-ostree`)
+- Use [`copr_install_isolated`](helpers/copr.sh) for COPR packages
+- For raw third-party repos: write the `.repo` file, install, then `rm` it before the script exits (bootc images don't refresh repos at runtime)
+- Scripts run as root with `set -eoux pipefail`; build context is mounted at `/ctx`
 
-### Disabling Scripts
+## Disabling a script
 
-To temporarily disable a script without deleting it:
-- Rename it with `.disabled` extension: `20-script.sh.disabled`
-- Or remove execute permission: `chmod -x build/20-script.sh`
-
-## Execution Order
-
-The Containerfile runs scripts like this:
-
-```dockerfile
-RUN /ctx/build/10-build.sh
-```
-
-If you want to run multiple scripts, you can:
-
-1. **Modify Containerfile** to run each script explicitly
-2. **Create a runner script** that executes all numbered scripts
-3. **Use the default** and keep everything in `10-build.sh` (simplest)
-
-## Notes
-
-- Scripts run as root during build
-- Build context is available at `/ctx`
-- Use dnf5 for package management (not dnf or yum)
-- Always use `-y` flag for non-interactive installs
+Rename it to drop the `[0-9]*-*.sh` pattern (e.g. `30-cosmic-desktop.sh` → `_30-cosmic-desktop.sh`). `chmod -x` and `.disabled` suffixes don't work — the loop invokes `bash "${script}"` and matches by glob.

@@ -2,12 +2,15 @@
 
 Holdfast is a personal Linux distribution based on [Universal Blue](https://universal-blue.org/) and [Bluefin](https://projectbluefin.io). It provides a stable, dependable foundation for development, experimentation, and daily use.
 
-**Image:** `ghcr.io/jacobtheeldest/holdfast:stable`
+| Variant | Image |
+| --- | --- |
+| Base | `ghcr.io/jacobtheeldest/holdfast:stable` |
+| NVIDIA (open drivers) | `ghcr.io/jacobtheeldest/holdfast-nvidia-open:stable` |
 
 ## What's Included
 
 - **Base:** [Bluefin DX](https://projectbluefin.io) (GNOME + developer tooling)
-- **Desktop sessions:** GNOME and [COSMIC](https://system76.com/cosmic) — choose at the GDM login screen
+- **Desktop sessions:** GNOME and [COSMIC](https://system76.com/cosmic) — choose at the login screen (cosmic-greeter)
 - **Build-time packages:** Ghostty terminal, sshfs, and anything in [`build/`](build/) scripts
 - **Runtime tools:** Homebrew packages ([`custom/brew/`](custom/brew/)), Flatpaks ([`custom/flatpaks/`](custom/flatpaks/)), ujust commands ([`custom/ujust/`](custom/ujust/))
 - **CI/CD:** Automated builds, validation, image signing, SBOM generation, Renovate dependency updates
@@ -18,6 +21,18 @@ Holdfast is a personal Linux distribution based on [Universal Blue](https://univ
 sudo bootc switch ghcr.io/jacobtheeldest/holdfast:stable
 sudo systemctl reboot
 ```
+
+## Updates
+
+Automatic updates are handled by [uupd](https://github.com/ublue-os/uupd) (from the Bluefin base). It runs daily at 4 AM, stages image + Flatpak + Homebrew updates, and applies them on next reboot.
+
+| Task | Command |
+| --- | --- |
+| Check for image update | `uupd update-check` |
+| Update everything (image + flatpaks + brew) | `ujust update` |
+| Update and reboot | `ujust update-and-reboot` |
+| Toggle automatic updates | `ujust toggle-updates` |
+| Check current image status | `sudo bootc status` |
 
 ## Customize
 
@@ -35,16 +50,10 @@ All `build/[0-9]*-*.sh` scripts run automatically in alphanumeric order. See [`b
 
 ## Development Workflow
 
-1. Open a pull request (`gh pr create --base master --head <branch_name> --fill`). CI validates Brewfiles, Flatpaks, Justfiles, shell scripts, and builds a test image
+1. Open a pull request: `gh pr create --base master --fill`. CI validates Brewfiles, Flatpaks, Justfiles, shell scripts, and builds a test image.
+2. Merge to `master`: `gh pr merge --auto --merge`. Triggers a `:stable` image build and push to GHCR.
 
-  a. `master` is protected
-  a.  Auto-merge is enabled so PRs land as soon as checks pass.
-
-1. Merge to `master` (`gh pr merge <branch_name> --auto --merge`).
-
-  a. Triggers a `:stable` image build and push to GHCR
-
-Renovate keeps base images, OCI imports, and Actions up to date automatically.
+`master` is protected and auto-merge is enabled, so PRs land as soon as checks pass. Renovate keeps base images, OCI imports, and Actions up to date automatically.
 
 ## Syncing Upstream Template
 
@@ -99,18 +108,17 @@ Follows the [Bluefin multi-stage build pattern](https://docs.projectbluefin.io/c
 1. **Context stage (`ctx`)** — assembles local `build/` and `custom/` files with OCI resources from `@projectbluefin/common` and `@ublue-os/brew`
 2. **Final stage** — starts from `bluefin-dx:stable`, mounts the context, and runs all numbered build scripts
 
-## Production Setup
+## Image Signing
 
-Image signing and SBOM attestation are configured in [`.github/workflows/build.yml`](.github/workflows/build.yml). To enable signing:
+Images are signed with [cosign](https://github.com/sigstore/cosign) on every push to `master`, using the `SIGNING_SECRET` repository secret. The public key is committed at [`cosign.pub`](cosign.pub).
 
-1. Generate keys: `cosign generate-key-pair`
-2. Add `cosign.key` contents as the `SIGNING_SECRET` GitHub repository secret
-3. Commit `cosign.pub` to the repo
-4. Uncomment the signing steps in `build.yml`
+Verify a pulled image:
 
-Verify: `cosign verify --key cosign.pub ghcr.io/jacobtheeldest/holdfast:stable`
+```bash
+cosign verify --key cosign.pub ghcr.io/jacobtheeldest/holdfast:stable
+```
 
-For image rechunking (5-10x smaller updates), see the [bootc documentation](https://containers.github.io/bootc/) and [zirconium-dev/zirconium](https://github.com/zirconium-dev/zirconium) for a working example.
+SBOM attestation is scaffolded in [`build.yml`](.github/workflows/build.yml) but currently disabled.
 
 ## Guides
 
