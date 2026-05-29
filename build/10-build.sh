@@ -16,15 +16,14 @@ shopt -s nullglob
 # shellcheck source=/dev/null
 source /ctx/build/helpers/copr.sh
 
-echo "::group:: Copy Bluefin Config from Common"
-
-# Copy just files from @projectbluefin/common (includes 00-entry.just which imports 60-custom.just)
-mkdir -p /usr/share/ublue-os/just/
-shopt -s nullglob
-cp -r /ctx/oci/common/bluefin/usr/share/ublue-os/just/* /usr/share/ublue-os/just/
-shopt -u nullglob
-
-echo "::endgroup::"
+# # Bluefin "common" already included in base image.
+# # Uncomment these lines and the matching COPY --from line in Containerfile if using a non-Bluefin base
+# echo "::group:: Copy Bluefin Config from Common"
+# mkdir -p /usr/share/ublue-os/just/
+# shopt -s nullglob
+# cp -r /ctx/oci/common/bluefin/usr/share/ublue-os/just/* /usr/share/ublue-os/just/
+# shopt -u nullglob
+# echo "::endgroup::"
 
 echo "::group:: Copy Custom Files"
 

@@ -34,10 +34,14 @@ FROM scratch AS ctx
 
 COPY build /build
 COPY custom /custom
-# Copy from OCI containers to distinct subdirectories to avoid conflicts
-# Note: Renovate can automatically update these :latest tags to SHA-256 digests for reproducibility
-COPY --from=ghcr.io/projectbluefin/common:latest /system_files /oci/common
-COPY --from=ghcr.io/ublue-os/brew:latest /system_files /oci/brew
+# OCI imports below are commented out because bluefin-dx:stable already provides them:
+#   - projectbluefin/common: just files in /usr/share/ublue-os/just/, Brewfiles, dconf, branding
+#   - ublue-os/brew: Homebrew binaries in /home/linuxbrew/.linuxbrew/
+# Uncomment together with the matching block in build/10-build.sh if switching
+# to a base that doesn't include them (e.g. silverblue-main, base-main).
+# Renovate can update these :latest tags to SHA-256 digests for reproducibility.
+# COPY --from=ghcr.io/projectbluefin/common:latest /system_files /oci/common
+# COPY --from=ghcr.io/ublue-os/brew:latest /system_files /oci/brew
 
 FROM ${BASE_IMAGE}
 
