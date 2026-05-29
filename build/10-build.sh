@@ -6,10 +6,17 @@ set -eoux pipefail
 shopt -s nullglob
 
 ###############################################################################
-# Main Build Script
+# Base system build
 ###############################################################################
-# This script follows the @ublue-os/bluefin pattern for build scripts.
-# It uses set -eoux pipefail for strict error handling and debugging.
+# Stages runtime customizations into the image and installs build-time packages:
+#   - Copies custom Brewfiles to /usr/share/ublue-os/homebrew/
+#   - Appends custom ujust recipes into /usr/share/ublue-os/just/60-custom.just
+#   - Copies Flatpak preinstall files to /etc/flatpak/preinstall.d/
+#   - dnf5 installs sshfs, ghostty (via COPR), sets ghostty as GNOME default terminal
+#   - Enables podman.socket
+#
+# Follows the @ublue-os/bluefin pattern with `set -eoux pipefail` for strict
+# error handling and debug output.
 ###############################################################################
 
 # Source helper functions

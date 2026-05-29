@@ -71,7 +71,9 @@ FROM ${BASE_IMAGE}
 ##   - Files from @projectbluefin/branding at /oci/branding
 ##   - Files from @ublue-os/artwork at /oci/artwork
 ##   - Files from @ublue-os/brew at /oci/brew
-## Scripts are run in numerical order (10-build.sh, 20-example.sh, etc.)
+## Every *.sh at the top of /ctx/build is executed in shell-glob (alphanumeric) order.
+## Number prefixes are optional — they just give you control over ordering. Subdirectories
+## (e.g. helpers/) are not invoked; they're for sourced libraries.
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \

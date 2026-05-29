@@ -26,11 +26,7 @@ Never commit files with syntax errors.
 ```text
 ├── Containerfile                    # Multi-stage build definition (source of truth for base image, OCI imports, script runner)
 ├── Justfile                         # Local build automation
-├── build/                           # Build-time scripts (all [0-9]*-*.sh run in alphanumeric order)
-│   ├── 10-build.sh                  # Main: packages, services, config
-│   ├── 30-cosmic-desktop.sh         # COSMIC desktop (additive, alongside GNOME)
-│   └── helpers/                     # Sourced helper libraries (not run directly)
-│       └── copr.sh                  # COPR helper functions
+├── build/                           # Build-time scripts (see build/README.md)
 ├── custom/                          # Runtime customizations (post-deploy/first boot)
 │   ├── brew/*.Brewfile              # Homebrew packages (default, development, fonts)
 │   ├── flatpaks/*.preinstall        # Flatpak apps (installed post-first-boot)
