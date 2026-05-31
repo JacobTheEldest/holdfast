@@ -1,11 +1,8 @@
 #!/usr/bin/bash
 
-set -eoux pipefail
+# Install COSMIC Desktop Environment
 
-###############################################################################
-# COSMIC Desktop (alongside GNOME)
-###############################################################################
-# Installs System76's COSMIC desktop from the ryanabx/cosmic-epoch COPR.
+# Installs System76's COSMIC desktop
 # Switches display manager from GDM to cosmic-greeter (greetd-based) so that
 # cosmic-comp can acquire DRM master — GDM doesn't hand it off properly.
 # Both GNOME and COSMIC sessions remain selectable at login.
@@ -26,7 +23,9 @@ set -eoux pipefail
 # echo "::endgroup::"
 ###############################################################################
 
-# shellcheck source=/dev/null
+set -eoux pipefail
+
+# shellcheck source=build/helpers/copr.sh
 source /ctx/build/helpers/copr.sh
 
 COSMIC_PACKAGES=(

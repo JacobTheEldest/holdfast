@@ -1,26 +1,12 @@
 #!/usr/bin/bash
 
+# Stage custom/ files into the image
+# Install additional packages and services
+
 set -eoux pipefail
+shopt -s nullglob   # so empty custom/ subdirs don't break the cp/find globs
 
-# Enable nullglob for all glob operations to prevent failures on empty matches
-shopt -s nullglob
-
-###############################################################################
-# Base system build
-###############################################################################
-# Stages runtime customizations into the image and installs build-time packages:
-#   - Copies custom Brewfiles to /usr/share/ublue-os/homebrew/
-#   - Appends custom ujust recipes into /usr/share/ublue-os/just/60-custom.just
-#   - Copies Flatpak preinstall files to /etc/flatpak/preinstall.d/
-#   - dnf5 installs sshfs, ghostty (via COPR), sets ghostty as GNOME default terminal
-#   - Enables podman.socket
-#
-# Follows the @ublue-os/bluefin pattern with `set -eoux pipefail` for strict
-# error handling and debug output.
-###############################################################################
-
-# Source helper functions
-# shellcheck source=/dev/null
+# shellcheck source=build/helpers/copr.sh
 source /ctx/build/helpers/copr.sh
 
 # # Bluefin "common" already included in base image.
@@ -32,42 +18,33 @@ source /ctx/build/helpers/copr.sh
 # shopt -u nullglob
 # echo "::endgroup::"
 
-echo "::group:: Copy Custom Files"
+echo "::group:: Stage custom/ files"
 
-# Copy Brewfiles to standard location
+# Add custom Brewfiles alongside Bluefin's
 mkdir -p /usr/share/ublue-os/homebrew/
 cp /ctx/custom/brew/*.Brewfile /usr/share/ublue-os/homebrew/
 
-# Consolidate Just Files
+# Concatenate ujust recipes into 60-custom.just to be imported by Bluefin's 00-entry.just
 mkdir -p /usr/share/ublue-os/just/
 find /ctx/custom/ujust -iname '*.just' -exec printf "\n\n" \; -exec cat {} \; >> /usr/share/ublue-os/just/60-custom.just
 
-# Copy Flatpak preinstall files
 mkdir -p /etc/flatpak/preinstall.d/
 cp /ctx/custom/flatpaks/*.preinstall /etc/flatpak/preinstall.d/
 
 echo "::endgroup::"
 
-echo "::group:: Install Packages"
+echo "::group:: Install packages"
 
-# Install packages using dnf5
 dnf5 install -y sshfs
-
-# Example using COPR with isolated pattern:
-# copr_install_isolated "ublue-os/staging" package-name
-
-# Ghostty terminal emulator
 copr_install_isolated "scottames/ghostty" ghostty
 
 echo "::endgroup::"
 
-echo "::group:: System Configuration"
+echo "::group:: System configuration"
 
-# Enable/disable systemd services
 systemctl enable podman.socket
-# Example: systemctl mask unwanted-service
 
-# Set ghostty as the default GNOME terminal
+# Set Ghostty as GNOME's default terminal for Ctrl+Alt+T and Files' "Open Terminal"
 mkdir -p /etc/dconf/db/local.d/
 cat > /etc/dconf/db/local.d/01-default-terminal << 'EOF'
 [org/gnome/desktop/default-applications/terminal]
@@ -81,4 +58,4 @@ echo "::endgroup::"
 # Restore default glob behavior
 shopt -u nullglob
 
-echo "Custom build complete!"
+echo "Build complete!"

@@ -2,8 +2,9 @@
 #######################
 ### custom-system.just
 #######################
-## Example system configuration commands
-## These are simplified examples adapted from Bluefin
+#
+# System maintenance and config recipes
+#
 
 # Run a system benchmark (requires stress-ng from Homebrew)
 [group('System')]

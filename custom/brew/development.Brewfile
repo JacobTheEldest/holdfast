@@ -27,12 +27,8 @@ brew "sops"           # secrets management (age/PGP-encrypted files)
 # Version & runtime management
 brew "mise"           # polyglot version manager (asdf-compatible)
 
-# Programming languages and tools
-# Global runtimes — mise owns project-specific versions.
-# Use unversioned formula names so brew floats us through minor bumps when
-# the default rolls forward (e.g. python@3.14 → @3.15). Pin to @x.y if a
-# specific version is required for a system-level tool.
-# brew "go"             # Go programming language
+# Global runtimes - programming languages and tools
+# Mise owns project-specific versions
 brew "node"           # Node.js (current LTS-tracking default)
 brew "python"         # Python 3 (current brew default)
 # brew "go"             # Go programming language
