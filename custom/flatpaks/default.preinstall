@@ -1,13 +1,11 @@
 # Default Flatpak applications
-# These will be installed on first boot
-# Format: INI file with [Flatpak Preinstall NAME] groups
-# See: https://docs.flatpak.org/en/latest/flatpak-command-reference.html#flatpak-preinstall
+# core apps, communication, productivity, dev GUI
 
 # Web Browsers
 [Flatpak Preinstall org.mozilla.firefox]
 Branch=stable
 
-[Flatpak Preinstall org.mozilla.Thunderbird]
+[Flatpak Preinstall org.mozilla.thunderbird_esr]
 Branch=stable
 
 # GNOME Core Applications
