@@ -2,8 +2,9 @@
 ####################
 ### custom-apps.just
 ####################
-## Example application installation commands
-## These are simplified examples adapted from Bluefin
+#
+# Shortcut recipes for `brew bundle` and Flatpak installs
+#
 
 # Install default applications via Homebrew
 [group('Apps')]
@@ -69,12 +70,10 @@ install-flatpak APP_ID:
     flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
     flatpak install -y flathub {{ APP_ID }}
 
-# Example: Install VSCode via Flatpak
 [group('Apps')]
 install-vscode:
     ujust install-flatpak com.visualstudio.code
 
-# Example: Install GIMP via Flatpak
 [group('Apps')]
 install-gimp:
     ujust install-flatpak org.gimp.GIMP

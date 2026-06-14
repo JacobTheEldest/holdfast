@@ -1,13 +1,10 @@
 #!/usr/bin/bash
+
+# COPR helper functions for build scripts
+
 set -euo pipefail
 
-###############################################################################
-# COPR Helper Functions
-###############################################################################
-# These helper functions follow the @ublue-os/bluefin pattern for managing
-# COPR repositories in a safe, isolated manner.
-###############################################################################
-
+# Enable build-time installation but keep a clean runtime environment
 copr_install_isolated() {
     local copr_name="$1"
     shift

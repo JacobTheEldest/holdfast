@@ -26,11 +26,7 @@ Never commit files with syntax errors.
 ```text
 ├── Containerfile                    # Multi-stage build definition (source of truth for base image, OCI imports, script runner)
 ├── Justfile                         # Local build automation
-├── build/                           # Build-time scripts (all [0-9]*-*.sh run in alphanumeric order)
-│   ├── 10-build.sh                  # Main: packages, services, config
-│   ├── 30-cosmic-desktop.sh         # COSMIC desktop (additive, alongside GNOME)
-│   ├── *.sh.example                 # Templates — rename to .sh to activate
-│   └── copr-helpers.sh              # COPR helper functions (sourced, not run directly)
+├── build/                           # Build-time scripts (see build/README.md)
 ├── custom/                          # Runtime customizations (post-deploy/first boot)
 │   ├── brew/*.Brewfile              # Homebrew packages (default, development, fonts)
 │   ├── flatpaks/*.preinstall        # Flatpak apps (installed post-first-boot)
@@ -48,12 +44,35 @@ Never commit files with syntax errors.
 - **Build-time** (`build/`): baked into image via `dnf5 install`; services, system configs, packages
 - **Runtime** (`custom/`): user-installed after deployment; Brewfiles, Flatpaks, ujust commands
 
+### Inherited from the Base Image (`bluefin-dx:stable`)
+
+These come from upstream and are not managed by this repo. Renovate bumps the `FROM` line in [`Containerfile`](Containerfile), but the contents float with whatever bluefin-dx ships per release — watch [projectbluefin/bluefin](https://github.com/ublue-os/bluefin) releases for breaking changes.
+
+- **GNOME desktop + dconf settings, branding, terminal config** — from bluefin
+- **`/usr/share/ublue-os/just/`** — bluefin ujust recipes (`apps`, `changelog`, `default`, `shared`, `system`, `update`, plus `00-entry.just` which `import?`s `60-custom.just`)
+- **`/usr/share/ublue-os/homebrew/`** — bluefin Brewfiles (`ai-tools`, `cli`, `cncf`, `default`, `development`, `fonts`, `full-desktop`, `ide`, etc.)
+- **Homebrew itself** at `/home/linuxbrew/.linuxbrew/`
+- **Developer tooling** (DX-specific): podman, devcontainers, container CLI, VS Code integration
+- **`uupd`** for automated updates (timer fires daily at 04:00)
+
+Because the base already ships the above, the `COPY --from=ghcr.io/projectbluefin/common` and `COPY --from=ghcr.io/ublue-os/brew` lines in [`Containerfile`](Containerfile) are commented out — uncomment if rebasing on `silverblue-main`, `base-main`, or `centos-bootc`.
+
+For tighter change visibility, pin the `FROM` to a digest (`@sha256:…`) so Renovate's PR title shows the exact upstream delta.
+
+### Added by Holdfast (this repo)
+
+- **`build/10-build.sh`**: `sshfs`, Ghostty (COPR), set Ghostty as default GNOME terminal, enable `podman.socket`, stage `custom/` files
+- **`build/30-cosmic-desktop.sh`**: COSMIC desktop session alongside GNOME, swap GDM → cosmic-greeter
+- **`custom/brew/*.Brewfile`** → dropped into `/usr/share/ublue-os/homebrew/` alongside bluefin's
+- **`custom/flatpaks/*.preinstall`** → `/etc/flatpak/preinstall.d/`
+- **`custom/ujust/*.just`** → appended to `/usr/share/ublue-os/just/60-custom.just`
+
 ### Bluefin Convention Compliance
 
 Always align with `@ublue-os/bluefin` patterns unless user explicitly approves deviation.
 
 - `dnf5` only (never `dnf`, `yum`, `rpm-ostree`); always with `-y`
-- COPR: use `copr_install_isolated` from `build/copr-helpers.sh` (enables, disables, installs with `--enablerepo`)
+- COPR: use `copr_install_isolated` from `build/helpers/copr.sh` (enables, disables, installs with `--enablerepo`)
 - Never use `dnf5` in ujust files
 - Validate Flatpak IDs on <https://flathub.org/>
 
@@ -73,7 +92,7 @@ Always align with `@ublue-os/bluefin` patterns unless user explicitly approves d
 | Add runtime CLI tool | `custom/brew/default.Brewfile` | `brew "pkg"` or `tap` + `brew` for third-party |
 | Add GUI app | `custom/flatpaks/default.preinstall` | Validate ID on Flathub first |
 | Add user command | `custom/ujust/*.just` | No `dnf5`; group with `[group('Category')]` |
-| Add third-party repo | New `build/20-*.sh` | See `.example` files for patterns |
+| Add third-party repo | New `build/20-*.sh` | Write `.repo` file, install, then `rm` it before the script exits |
 | Add desktop session | New `build/30-*.sh` | See `30-cosmic-desktop.sh` for additive pattern |
 | Switch base image | `Containerfile` | Update `FROM` line; alternatives listed in comments |
 | Add OCI resources | `Containerfile` ctx stage | Add `COPY --from` lines |
@@ -97,7 +116,7 @@ When implementing customizations, prefer this order:
 
 ### Do Not Modify (unless required)
 
-`.github/renovate.json5`, `.github/workflows/validate-*.yml`, `build/copr-helpers.sh`, `cosign.pub`
+`.github/renovate.json5`, `.github/workflows/validate-*.yml`, `build/helpers/copr.sh`, `cosign.pub`
 
 ### Modify with Extreme Caution
 
@@ -128,8 +147,7 @@ When implementing customizations, prefer this order:
 4. Never use `dnf5` in ujust files
 5. Never push directly to `master`; confirm with user before any push
 6. Run validation before committing
-7. Review `.example` scripts before creating new patterns
-8. Be surgical: smallest maintainable change set possible
+7. Be surgical: smallest maintainable change set possible
 
 ---
 
