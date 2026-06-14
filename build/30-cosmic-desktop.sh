@@ -1,27 +1,21 @@
 #!/usr/bin/bash
 
-# Install COSMIC Desktop Environment
-
-# Installs System76's COSMIC desktop
-# Switches display manager from GDM to cosmic-greeter (greetd-based) so that
-# cosmic-comp can acquire DRM master — GDM doesn't hand it off properly.
-# Both GNOME and COSMIC sessions remain selectable at login.
-#
-# Alternative: rip-and-replace GNOME entirely. Uncomment the block below before
-# the install step if you want a COSMIC-only image. Note that removing gdm
-# makes the cosmic-greeter switch redundant.
-#
-# echo "::group:: Remove GNOME Desktop"
-# dnf5 remove -y \
-#     gnome-shell \
-#     gnome-shell-extension* \
-#     gnome-terminal \
-#     gnome-software \
-#     gnome-control-center \
-#     nautilus \
-#     gdm
-# echo "::endgroup::"
 ###############################################################################
+# Installs System76's COSMIC desktop
+###############################################################################
+
+set -eoux pipefail
+
+REMOVE_GNOME=false
+# false:
+# - Keep GMD as the display manager
+# - Gnome and Cosmic are both selectable from the login screen
+# - Uses cosmic-greeter as the lockscreen for Cosmic DE
+#
+# true:
+# - Built a Cosmic-only image
+# - Remove Gnome and GDM
+# - Use cosmic-greeter as the display manager and lockscreen
 
 set -eoux pipefail
 
@@ -29,32 +23,32 @@ set -eoux pipefail
 source /ctx/build/helpers/copr.sh
 
 COSMIC_PACKAGES=(
-    cosmic-session
-    cosmic-greeter
-    cosmic-comp
-    cosmic-panel
-    cosmic-launcher
-    cosmic-applets
-    cosmic-settings
-    cosmic-files
-    cosmic-edit
-    cosmic-term
-    cosmic-store
-    cosmic-player
-    cosmic-screenshot
-    cosmic-bg
-    cosmic-wallpapers
-    cosmic-icon-theme
-    cosmic-notifications
-    cosmic-osd
-    cosmic-app-library
-    cosmic-workspaces
-    xdg-desktop-portal-cosmic
+  cosmic-session
+  cosmic-greeter
+  cosmic-comp
+  cosmic-panel
+  cosmic-launcher
+  cosmic-applets
+  cosmic-settings
+  cosmic-files
+  cosmic-edit
+  cosmic-term
+  cosmic-store
+  cosmic-player
+  cosmic-screenshot
+  cosmic-bg
+  cosmic-wallpapers
+  cosmic-icon-theme
+  cosmic-notifications
+  cosmic-osd
+  cosmic-app-library
+  cosmic-workspaces
+  xdg-desktop-portal-cosmic
 )
 
 echo "::group:: Install COSMIC Desktop"
 
-copr_install_isolated "ryanabx/cosmic-epoch" "${COSMIC_PACKAGES[@]}"
+dnf5 install -y "${COSMIC_PACKAGES[@]}"
 
 echo "::endgroup::"
 
@@ -62,15 +56,15 @@ echo "::group:: Verify COSMIC Packages"
 
 FAILED=0
 for pkg in "${COSMIC_PACKAGES[@]}"; do
-    if ! rpm -q "$pkg" > /dev/null 2>&1; then
-        echo "ERROR: $pkg not installed"
-        FAILED=1
-    fi
+  if ! rpm -q "$pkg" > /dev/null 2>&1; then
+    echo "ERROR: $pkg not installed"
+    FAILED=1
+  fi
 done
 
 if [[ "$FAILED" -eq 1 ]]; then
-    echo "COSMIC package verification failed"
-    exit 1
+  echo "COSMIC package verification failed"
+  exit 1
 fi
 
 echo "All COSMIC packages verified"
@@ -79,10 +73,10 @@ echo "::endgroup::"
 echo "::group:: Verify COSMIC Session"
 
 if [[ -f /usr/share/wayland-sessions/cosmic.desktop ]]; then
-    echo "COSMIC session registered:"
-    cat /usr/share/wayland-sessions/cosmic.desktop
+  echo "COSMIC session registered:"
+  cat /usr/share/wayland-sessions/cosmic.desktop
 else
-    echo "WARNING: cosmic.desktop session file not found — users may need to select manually"
+  echo "WARNING: cosmic.desktop session file not found — users may need to select manually"
 fi
 
 echo "Available wayland sessions:"
@@ -90,11 +84,22 @@ ls -la /usr/share/wayland-sessions/ || true
 
 echo "::endgroup::"
 
-echo "::group:: Switch display manager to cosmic-greeter"
+if [[ "$REMOVE_GNOME" == "true" ]]; then
+  echo "::group:: Remove GNOME Desktop (COSMIC-only image)"
 
-systemctl disable gdm
-systemctl enable cosmic-greeter
+  dnf5 remove -y \
+    gnome-shell \
+    'gnome-shell-extension*' \
+    gnome-terminal \
+    gnome-software \
+    gnome-control-center \
+    nautilus \
+    gdm
 
-echo "::endgroup::"
+  # GDM is gone — cosmic-greeter must take over as the display manager.
+  systemctl enable cosmic-greeter
 
-echo "COSMIC desktop installed — select session at the cosmic-greeter login screen"
+  echo "::endgroup::"
+fi
+
+echo "COSMIC desktop installed — select session at the login screen"
