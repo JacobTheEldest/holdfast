@@ -7,7 +7,9 @@ on:
       - master
 
 # Each triggered validator runs even if previous steps fail.
-# The final gate step fails the job if any validator fails.
+# The final gate step fails the job if any validator failed.
+# Validation logic is implemented in mise tasks for consistency with local dev.
+# `mise run validate:<name>` tasks under .config/mise/tasks/
 jobs:
   validate:
     name: Validation gate
@@ -23,20 +25,30 @@ jobs:
           filters: |
             brew:
               - 'custom/brew/**'
+              - '.config/mise/tasks/validate/brewfiles.sh'
             flatpaks:
               - 'custom/flatpak/**'
+              - '.config/mise/tasks/validate/flatpaks.sh'
             justfiles:
               - 'custom/ujust/**'
               - 'Justfile'
+              - '.config/mise/tasks/validate/justfiles.sh'
             shell:
               - 'build/**/*.sh'
-              - '.github/workflows/helpers/**/*.sh'
+              - '.config/mise/tasks/**/*.sh'
             renovate:
               - '.github/renovate.json5'
               - '.github/workflows/renovate.yml'
+              - '.config/mise/tasks/validate/renovate.sh'
 
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up mise
+        uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
+        with:
+          install: true
+          cache: true
 
       # --- Brewfiles ---
       - name: Set up Homebrew
@@ -48,53 +60,41 @@ jobs:
         continue-on-error: true
         if: ${{ !cancelled() && steps.filter.outputs.brew == 'true' }}
         shell: bash
-        run: .github/workflows/helpers/validate.sh brewfiles
+        run: mise run validate:brewfiles
 
       # --- Flatpaks ---
       - name: Set up Flathub
         if: ${{ !cancelled() && steps.filter.outputs.flatpaks == 'true' }}
         shell: bash
-        run: .github/workflows/helpers/validate.sh setup-flathub
+        run: |
+          sudo apt-get install -y flatpak
+          flatpak remote-add --user --if-not-exists flathub \
+            https://dl.flathub.org/repo/flathub.flatpakrepo
 
       - name: Validate Flatpaks
         id: flatpak-validate
         continue-on-error: true
         if: ${{ !cancelled() && steps.filter.outputs.flatpaks == 'true' }}
         shell: bash
-        run: .github/workflows/helpers/validate.sh flatpaks
+        run: mise run validate:flatpaks
 
       # --- Justfiles ---
-      - name: Install just
-        if: ${{ !cancelled() && steps.filter.outputs.justfiles == 'true' }}
-        uses: extractions/setup-just@dd310ad5a97d8e7b41793f8ef055398d51ad4de6 # v2
-
       - name: Validate Justfiles
         id: just-validate
         continue-on-error: true
         if: ${{ !cancelled() && steps.filter.outputs.justfiles == 'true' }}
         shell: bash
-        run: .github/workflows/helpers/validate.sh justfiles
+        run: mise run validate:justfiles
 
       # --- Shell Scripts ---
-      - name: Install ShellCheck
-        if: ${{ !cancelled() && steps.filter.outputs.shell == 'true' }}
-        shell: bash
-        run: .github/workflows/helpers/validate.sh setup-shellcheck
-
       - name: Validate Shell Scripts
         id: shell-validate
         continue-on-error: true
         if: ${{ !cancelled() && steps.filter.outputs.shell == 'true' }}
         shell: bash
-        run: .github/workflows/helpers/validate.sh shell-scripts
+        run: mise run validate:shell-scripts
 
       # --- Renovate ---
-      - name: Setup Node.js
-        if: ${{ !cancelled() && steps.filter.outputs.renovate == 'true' }}
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v6
-        with:
-          node-version: latest
-
       - name: Validate Renovate Config
         id: renovate-validate
         continue-on-error: true
@@ -102,7 +102,7 @@ jobs:
         shell: bash
         env:
           RENOVATE_VERSION: latest
-        run: .github/workflows/helpers/validate.sh renovate
+        run: mise run validate:renovate
 
       # --- Aggregate ---
       - name: Validation gate
