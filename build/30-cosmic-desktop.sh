@@ -17,11 +17,6 @@ REMOVE_GNOME=false
 # - Remove Gnome and GDM
 # - Use cosmic-greeter as the display manager and lockscreen
 
-set -eoux pipefail
-
-# shellcheck source=build/helpers/copr.sh
-source /ctx/build/helpers/copr.sh
-
 COSMIC_PACKAGES=(
   cosmic-session
   cosmic-greeter
