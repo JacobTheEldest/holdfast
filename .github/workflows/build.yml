@@ -112,11 +112,9 @@ jobs:
           # This generates all the tags for your image, you can add custom tags here too!
           # Default tags are "$DEFAULT_TAG" and "$DEFAULT_TAG.$date".
           tags: |
-            type=raw,value=${{ env.DEFAULT_TAG }}
-            type=raw,value=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}}
-            type=raw,value={{date 'YYYYMMDD'}}
-            type=sha,enable=${{ github.event_name == 'pull_request' }}
-            type=ref,event=pr
+            type=raw,value=${{ env.DEFAULT_TAG }},enable=${{ github.event_name != 'pull_request' }}
+            type=raw,value=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}},enable=${{ github.event_name != 'pull_request' }}
+            type=raw,value={{date 'YYYYMMDD'}},enable=${{ github.event_name != 'pull_request' }}
           labels: |
             io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/${{ github.sha }}/README.md
             org.opencontainers.image.created=${{ steps.date.outputs.date }}
@@ -135,6 +133,41 @@ jobs:
             containers.bootc=1
           sep-tags: " "
           sep-annotations: " "
+
+      # On pull requests, derive a per-PR sequential tag: pr-<number>.<increment>.
+      # The increment is max(existing pr-<number>.N across both packages) + 1, so
+      # both matrix variants compute the same value for a given build.
+      - name: Compute PR image tag
+        id: prtag
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          BASE_PKG="$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')"
+          max=0
+          for pkg in "${BASE_PKG}" "${BASE_PKG}-nvidia-open"; do
+            tags="$(gh api --paginate "/users/${OWNER,,}/packages/container/${pkg}/versions" \
+              --jq '.[].metadata.container.tags[]?' 2>/dev/null || true)"
+            while IFS= read -r t; do
+              if [[ "$t" =~ ^pr-${PR_NUMBER}\.([0-9]+)$ ]]; then
+                n="${BASH_REMATCH[1]}"
+                (( n > max )) && max="$n"
+              fi
+            done <<< "$tags"
+          done
+          echo "tag=pr-${PR_NUMBER}.$((max + 1))" >> "$GITHUB_OUTPUT"
+
+      # Tags actually pushed: stable/date tags on master, the pr-<n>.<inc> tag on PRs.
+      - name: Determine push tags
+        id: tags
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "tags=${{ steps.prtag.outputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tags=${{ steps.metadata.outputs.tags }}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build Image
         id: build_image
@@ -165,7 +198,7 @@ jobs:
       # Tag for registry
       - name: Tag for registry
         run: |
-          for tag in ${{ steps.metadata.outputs.tags }}; do
+          for tag in ${{ steps.tags.outputs.tags }}; do
             sudo podman tag ${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }} ${{ env.IMAGE_NAME }}:$tag
           done
 
@@ -196,17 +229,17 @@ jobs:
           echo "OUTPUT_PATH=${OUTPUT_PATH}" >> $GITHUB_OUTPUT
 
       - name: Login to GitHub Container Registry
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        if: github.event_name == 'pull_request' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login -u "${{ github.actor }}" --password-stdin ghcr.io
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login -u "${{ github.actor }}" --password-stdin ghcr.io
 
       - name: Push To GHCR
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        if: github.event_name == 'pull_request' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         id: push
         run: |
           DIGEST=""
-          for tag in ${{ steps.metadata.outputs.tags }}; do
+          for tag in ${{ steps.tags.outputs.tags }}; do
             sudo podman push --digestfile=/tmp/digest \
               "${{ env.IMAGE_NAME }}:${tag}" \
               "${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}"
@@ -222,7 +255,7 @@ jobs:
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         run: |
           IMAGE_FULL="${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}"
-          for tag in ${{ steps.metadata.outputs.tags }}; do
+          for tag in ${{ steps.tags.outputs.tags }}; do
             cosign sign -y --key env://COSIGN_PRIVATE_KEY $IMAGE_FULL:$tag
           done
         env:
