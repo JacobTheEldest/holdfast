@@ -8,19 +8,14 @@ set -eoux pipefail
 
 REMOVE_GNOME=false
 # false:
-# - Keep GMD as the display manager
+# - Keep GDM as the display manager
 # - Gnome and Cosmic are both selectable from the login screen
 # - Uses cosmic-greeter as the lockscreen for Cosmic DE
 #
 # true:
-# - Built a Cosmic-only image
+# - Build a Cosmic-only image
 # - Remove Gnome and GDM
 # - Use cosmic-greeter as the display manager and lockscreen
-
-set -eoux pipefail
-
-# shellcheck source=build/helpers/copr.sh
-source /ctx/build/helpers/copr.sh
 
 COSMIC_PACKAGES=(
   cosmic-session
@@ -48,7 +43,12 @@ COSMIC_PACKAGES=(
 
 echo "::group:: Install COSMIC Desktop"
 
-dnf5 install -y "${COSMIC_PACKAGES[@]}"
+# cosmic-comp 1.0.14 through at least 1.0.16 has an upstream DRM-master regression
+# The COSMIC session freezes (no input, frozen cursor) on certain hardware
+# Unpin when the upstream fix lands (see https://github.com/JacobTheEldest/holdfast/issues/30)
+COSMIC_VERSION="1.0.13"
+dnf5 install -y --enablerepo=updates-archive "${COSMIC_PACKAGES[@]/%/-$COSMIC_VERSION}"
+# dnf5 install -y "${COSMIC_PACKAGES[@]}" # Unpinned version
 
 echo "::endgroup::"
 
