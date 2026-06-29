@@ -147,7 +147,7 @@ Automatic updates are handled by [uupd](https://github.com/ublue-os/uupd). It ru
 
     ```bash
     sudo podman image scp \
-      $(id -un)@localhost::localhost/holdfast:stable \
+      $(id -un)@localhost::localhost/holdfast:testing \
       root@localhost::
     sudo podman images localhost/holdfast # Verify the image landed
     ```
@@ -155,7 +155,7 @@ Automatic updates are handled by [uupd](https://github.com/ublue-os/uupd). It ru
 1. Switch to the local image and boot into it:
 
     ```bash
-    sudo bootc switch --transport containers-storage localhost/holdfast:stable
+    sudo bootc switch --transport containers-storage localhost/holdfast:testing
     sudo bootc status # Confirm it's staged and the pinned image is intact
     sudo systemctl reboot
     ```
@@ -163,7 +163,7 @@ Automatic updates are handled by [uupd](https://github.com/ublue-os/uupd). It ru
 1. Roll back if necessary by selecting the pinned known-good entry at the boot menu or staging it from a working system:
 
     ```bash
-    sudo bootc switch --transport registry ghcr.io/jacobtheeldest/holdfast:stable
+    sudo bootc switch --transport registry ghcr.io/jacobtheeldest/holdfast:testing
     sudo systemctl reboot
     ```
 
