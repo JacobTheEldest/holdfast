@@ -6,7 +6,7 @@
 
 set -eoux pipefail
 
-REMOVE_GNOME=false
+REMOVE_GNOME=true
 # false:
 # - Keep GDM as the display manager
 # - Gnome and Cosmic are both selectable from the login screen
@@ -98,7 +98,7 @@ if [[ "$REMOVE_GNOME" == "true" ]]; then
     nautilus \
     gdm
 
-  # GDM is gone — cosmic-greeter must take over as the display manager.
+  # Use cosmic-greeter as the replacement display manager.
   systemctl enable cosmic-greeter
 
   echo "::endgroup::"
