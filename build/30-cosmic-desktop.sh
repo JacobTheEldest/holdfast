@@ -86,6 +86,19 @@ ls -la /usr/share/wayland-sessions/ || true
 
 echo "::endgroup::"
 
+echo "::group:: Add COSMIC session registration for GDM"
+# Without X-GDM-SessionRegisters=true, logind never marks the session active
+# and cosmic-comp cannot acquire DRM master - causes immediate freeze on login
+if [[ -f /usr/share/wayland-sessions/cosmic.desktop ]]; then
+  # Check if keys already exist to avoid duplicates
+  if ! grep -q 'X-GDM-SessionRegisters' /usr/share/wayland-sessions/cosmic.desktop; then
+    echo "X-GDM-SessionRegisters=true" >> /usr/share/wayland-sessions/cosmic.desktop
+    echo "X-GDM-CanRunHeadless=true" >> /usr/share/wayland-sessions/cosmic.desktop
+    echo "Added GDM session registration keys to cosmic.desktop"
+  fi
+fi
+echo "::endgroup::"
+
 if [[ "$REMOVE_GNOME" == "true" ]]; then
   echo "::group:: Remove GNOME Desktop (COSMIC-only image)"
 
