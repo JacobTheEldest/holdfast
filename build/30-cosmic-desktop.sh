@@ -38,6 +38,8 @@ COSMIC_PACKAGES=(
   cosmic-osd
   cosmic-app-library
   cosmic-workspaces
+  cosmic-idle
+  cosmic-randr
   xdg-desktop-portal-cosmic
 )
 
