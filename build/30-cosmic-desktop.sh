@@ -45,12 +45,7 @@ COSMIC_PACKAGES=(
 
 echo "::group:: Install COSMIC Desktop"
 
-# cosmic-comp 1.0.14 through at least 1.0.16 has an upstream DRM-master regression
-# The COSMIC session freezes (no input, frozen cursor) on certain hardware
-# Unpin when the upstream fix lands (see https://github.com/JacobTheEldest/holdfast/issues/30)
-COSMIC_VERSION="1.0.13"
-dnf5 install -y --enablerepo=updates-archive "${COSMIC_PACKAGES[@]/%/-$COSMIC_VERSION}"
-# dnf5 install -y "${COSMIC_PACKAGES[@]}" # Unpinned version
+dnf5 install -y "${COSMIC_PACKAGES[@]}"
 
 echo "::endgroup::"
 
@@ -58,8 +53,8 @@ echo "::group:: Verify COSMIC Packages"
 
 FAILED=0
 for pkg in "${COSMIC_PACKAGES[@]}"; do
-  if ! rpm -q "$pkg" > /dev/null 2>&1; then
-    echo "ERROR: $pkg not installed"
+  if ! rpm -q "${pkg}" > /dev/null 2>&1; then
+    echo "ERROR: ${pkg} not installed"
     FAILED=1
   fi
 done
