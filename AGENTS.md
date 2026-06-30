@@ -10,12 +10,13 @@
 
 Execute before **every** commit:
 
-1. **Conventional Commits** — format: `<type>[scope]: <description>`. See `.github/commit-convention.md`
-2. **Shellcheck** — `shellcheck build/*.sh` on modified shell files
-3. **YAML validation** — validate modified YAML files
-4. **Justfile syntax** — `just --list`
-5. **Atomic commits** — one logical change per commit; use `jj` (jujutsu), not `git`
-6. **Remote safety** — confirm with user before pushing
+1. **Conventional Commits** — format: `<type>[scope]: <description>` (see Commit Convention below)
+2. **Pre-commit hooks** — `pre-commit run --all-files` (yaml/json/toml + Brewfile validation)
+3. **Mise validators** — `mise run validate:justfiles` (the canonical validator; CI runs the same)
+4. **Shellcheck** — `shellcheck build/*.sh` on modified shell files (also covered by `mise run validate:shell-scripts`)
+5. **Just syntax** — `just check` (or `just fix` to auto-format; `just --list` only prints recipes)
+6. **Atomic commits** — one logical change per commit; use `jj` (jujutsu), not `git`
+7. **Remote safety** — confirm with user before pushing
 
 Never commit files with syntax errors.
 
@@ -150,6 +151,22 @@ When implementing customizations, prefer this order:
 7. Be surgical: smallest maintainable change set possible
 
 ---
+
+## Commit Convention
+
+Format: `<type>[scope]: <description>` — lowercase type, optional scope in parens, imperative present tense.
+
+| Type | Use for |
+| --- | --- |
+| `feat` | New user-visible feature (package, ujust command, desktop session) |
+| `fix` | Bug fix |
+| `chore` | Tooling, deps, non-functional changes |
+| `docs` | Documentation only |
+| `refactor` | Restructuring without behavior change |
+| `ci` | Workflow / Renovate / signing changes |
+| `build` | Containerfile, Justfile, build scripts |
+
+Scope examples: `cosmic`, `brew`, `flatpaks`, `containerfile`, `ci`, `renovate`.
 
 ## Resources
 
