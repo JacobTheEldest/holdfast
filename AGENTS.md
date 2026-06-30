@@ -27,13 +27,26 @@ Never commit files with syntax errors.
 ```text
 ├── Containerfile                    # Multi-stage build definition (source of truth for base image, OCI imports, script runner)
 ├── Justfile                         # Local build automation
+├── .config/mise/                    # mise tasks (canonical local validators at .config/mise/tasks/validate/)
+├── .pre-commit-config.yaml          # Pre-commit hooks (yaml/json/toml + Brewfile validation)
+├── .github/
+│   └── workflows/                   # CI: build.yml, clean.yml, clean-pr-images.yml, renovate.yml, validate.yml
 ├── build/                           # Build-time scripts (see build/README.md)
+│   └── helpers/copr.sh              # Sourced library; do not edit
+├── cosign.pub                       # Cosign public key for image signature verification
 ├── custom/                          # Runtime customizations (post-deploy/first boot)
 │   ├── brew/*.Brewfile              # Homebrew packages (default, development, fonts)
 │   ├── flatpaks/*.preinstall        # Flatpak apps (installed post-first-boot)
-│   └── ujust/*.just                 # User convenience commands
+│   └── ujust/*.just                 # User convenience commands (concatenated to 60-custom.just)
 ├── iso/                             # Local VM testing only (no CI/CD)
-└── .github/workflows/               # CI: build.yml, clean.yml, renovate.yml, validate-*.yml
+│   ├── disk.toml                    # BIB config for qcow2/raw (VM geometry)
+│   ├── iso.toml                     # BIB config for installer ISO (update bootc switch URL before use)
+│   └── rclone/                      # rclone config bundled into ISO
+├── artifacthub-repo.yml             # ArtifactHub metadata
+├── CLAUDE.md                        # Claude-specific entry; @AGENTS.md
+├── LICENSE                          # Apache-2.0
+├── README.md                        # User-facing deploy/customize docs
+└── AGENTS.md                        # This file
 ```
 
 ---
@@ -63,7 +76,7 @@ For tighter change visibility, pin the `FROM` to a digest (`@sha256:…`) so Ren
 ### Added by Holdfast (this repo)
 
 - **`build/10-build.sh`**: `sshfs`, Ghostty (COPR), set Ghostty as default GNOME terminal, enable `podman.socket`, stage `custom/` files
-- **`build/30-cosmic-desktop.sh`**: COSMIC desktop session alongside GNOME, swap GDM → cosmic-greeter
+- **`build/30-cosmic-desktop.sh`**: Add COSMIC desktop session, optionally remove GNOME (set `REMOVE_GNOME=true` in script)
 - **`custom/brew/*.Brewfile`** → dropped into `/usr/share/ublue-os/homebrew/` alongside bluefin's
 - **`custom/flatpaks/*.preinstall`** → `/etc/flatpak/preinstall.d/`
 - **`custom/ujust/*.just`** → appended to `/usr/share/ublue-os/just/60-custom.just`
@@ -149,6 +162,10 @@ When implementing customizations, prefer this order:
 5. Never push directly to `master`; confirm with user before any push
 6. Run validation before committing
 7. Be surgical: smallest maintainable change set possible
+
+### Edit Collaboration
+
+When you see discrepancies between expected file content and actual content, **ask for clarification before making assumptions**. The user may have intentionally made changes that differ from your expectations. Verify intent before modifying or "fixing" content.
 
 ---
 
