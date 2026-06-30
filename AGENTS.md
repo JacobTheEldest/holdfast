@@ -10,12 +10,13 @@
 
 Execute before **every** commit:
 
-1. **Conventional Commits** — format: `<type>[scope]: <description>`. See `.github/commit-convention.md`
-2. **Shellcheck** — `shellcheck build/*.sh` on modified shell files
-3. **YAML validation** — validate modified YAML files
-4. **Justfile syntax** — `just --list`
-5. **Atomic commits** — one logical change per commit; use `jj` (jujutsu), not `git`
-6. **Remote safety** — confirm with user before pushing
+1. **Conventional Commits** — format: `<type>[scope]: <description>` (see Commit Convention below)
+2. **Pre-commit hooks** — `pre-commit run --all-files` (yaml/json/toml + Brewfile validation)
+3. **Mise validators** — `mise run validate:justfiles` (the canonical validator; CI runs the same)
+4. **Shellcheck** — `shellcheck build/*.sh` on modified shell files (also covered by `mise run validate:shell-scripts`)
+5. **Just syntax** — `just check` (or `just fix` to auto-format; `just --list` only prints recipes)
+6. **Atomic commits** — one logical change per commit; use `jj` (jujutsu), not `git`
+7. **Remote safety** — confirm with user before pushing
 
 Never commit files with syntax errors.
 
@@ -26,13 +27,26 @@ Never commit files with syntax errors.
 ```text
 ├── Containerfile                    # Multi-stage build definition (source of truth for base image, OCI imports, script runner)
 ├── Justfile                         # Local build automation
+├── .config/mise/                    # mise tasks (canonical local validators at .config/mise/tasks/validate/)
+├── .pre-commit-config.yaml          # Pre-commit hooks (yaml/json/toml + Brewfile validation)
+├── .github/
+│   └── workflows/                   # CI: build.yml, clean.yml, clean-pr-images.yml, renovate.yml, validate.yml
 ├── build/                           # Build-time scripts (see build/README.md)
+│   └── helpers/copr.sh              # Sourced library; do not edit
+├── cosign.pub                       # Cosign public key for image signature verification
 ├── custom/                          # Runtime customizations (post-deploy/first boot)
 │   ├── brew/*.Brewfile              # Homebrew packages (default, development, fonts)
 │   ├── flatpaks/*.preinstall        # Flatpak apps (installed post-first-boot)
-│   └── ujust/*.just                 # User convenience commands
+│   └── ujust/*.just                 # User convenience commands (concatenated to 60-custom.just)
 ├── iso/                             # Local VM testing only (no CI/CD)
-└── .github/workflows/               # CI: build.yml, clean.yml, renovate.yml, validate-*.yml
+│   ├── disk.toml                    # BIB config for qcow2/raw (VM geometry)
+│   ├── iso.toml                     # BIB config for installer ISO (update bootc switch URL before use)
+│   └── rclone/                      # rclone config bundled into ISO
+├── artifacthub-repo.yml             # ArtifactHub metadata
+├── CLAUDE.md                        # Claude-specific entry; @AGENTS.md
+├── LICENSE                          # Apache-2.0
+├── README.md                        # User-facing deploy/customize docs
+└── AGENTS.md                        # This file
 ```
 
 ---
@@ -62,7 +76,7 @@ For tighter change visibility, pin the `FROM` to a digest (`@sha256:…`) so Ren
 ### Added by Holdfast (this repo)
 
 - **`build/10-build.sh`**: `sshfs`, Ghostty (COPR), set Ghostty as default GNOME terminal, enable `podman.socket`, stage `custom/` files
-- **`build/30-cosmic-desktop.sh`**: COSMIC desktop session alongside GNOME, swap GDM → cosmic-greeter
+- **`build/30-cosmic-desktop.sh`**: Add COSMIC desktop session, optionally remove GNOME (set `REMOVE_GNOME=true` in script)
 - **`custom/brew/*.Brewfile`** → dropped into `/usr/share/ublue-os/homebrew/` alongside bluefin's
 - **`custom/flatpaks/*.preinstall`** → `/etc/flatpak/preinstall.d/`
 - **`custom/ujust/*.just`** → appended to `/usr/share/ublue-os/just/60-custom.just`
@@ -97,7 +111,9 @@ Always align with `@ublue-os/bluefin` patterns unless user explicitly approves d
 | Switch base image | `Containerfile` | Update `FROM` line; alternatives listed in comments |
 | Add OCI resources | `Containerfile` ctx stage | Add `COPY --from` lines |
 | Enable service | `build/10-build.sh` | `systemctl enable service.name` |
-| Test locally | Terminal | `just build && just build-qcow2 && just run-vm-qcow2` |
+| Test locally (VM) | Terminal | `just rebuild-qcow2 && just run-vm-qcow2` (geometry in `iso/disk.toml`) |
+| Run local validation | Terminal | `pre-commit run --all-files && mise run validate:justfiles && just check` |
+| Sync upstream template | Terminal | `jj git fetch --remote upstream && jj rebase -s 'fork_point(master, main@upstream)+' -d main@upstream` (see README) |
 
 ---
 
@@ -121,6 +137,22 @@ When implementing customizations, prefer this order:
 ### Modify with Extreme Caution
 
 `.github/workflows/build.yml`, `.github/workflows/clean.yml`, `Justfile`
+
+---
+
+## Validation & Upstream Sync
+
+Local validation **must** match CI. The canonical entry points are:
+
+| Purpose | Command |
+| --- | --- |
+| Pre-commit (yaml/json/toml + Brewfile) | `pre-commit run --all-files` |
+| Full validator suite (same as CI) | `mise run validate:<name>` for each — `brewfiles`, `flatpaks`, `justfiles`, `shell-scripts`, `renovate` |
+| Format justfiles | `just fix` |
+
+`jj`-based upstream sync with `projectbluefin/finpilot` is documented in
+[`README.md`](README.md#syncing-upstream-template) — this is the only blessed
+flow for pulling template changes. Never rebase by hand.
 
 ---
 
@@ -149,7 +181,27 @@ When implementing customizations, prefer this order:
 6. Run validation before committing
 7. Be surgical: smallest maintainable change set possible
 
+### Edit Collaboration
+
+When you see discrepancies between expected file content and actual content, **ask for clarification before making assumptions**. The user may have intentionally made changes that differ from your expectations. Verify intent before modifying or "fixing" content.
+
 ---
+
+## Commit Convention
+
+Format: `<type>[scope]: <description>` — lowercase type, optional scope in parens, imperative present tense.
+
+| Type | Use for |
+| --- | --- |
+| `feat` | New user-visible feature (package, ujust command, desktop session) |
+| `fix` | Bug fix |
+| `chore` | Tooling, deps, non-functional changes |
+| `docs` | Documentation only |
+| `refactor` | Restructuring without behavior change |
+| `ci` | Workflow / Renovate / signing changes |
+| `build` | Containerfile, Justfile, build scripts |
+
+Scope examples: `cosmic`, `brew`, `flatpaks`, `containerfile`, `ci`, `renovate`.
 
 ## Resources
 
