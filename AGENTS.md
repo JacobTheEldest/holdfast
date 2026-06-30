@@ -111,7 +111,9 @@ Always align with `@ublue-os/bluefin` patterns unless user explicitly approves d
 | Switch base image | `Containerfile` | Update `FROM` line; alternatives listed in comments |
 | Add OCI resources | `Containerfile` ctx stage | Add `COPY --from` lines |
 | Enable service | `build/10-build.sh` | `systemctl enable service.name` |
-| Test locally | Terminal | `just build && just build-qcow2 && just run-vm-qcow2` |
+| Test locally (VM) | Terminal | `just rebuild-qcow2 && just run-vm-qcow2` (geometry in `iso/disk.toml`) |
+| Run local validation | Terminal | `pre-commit run --all-files && mise run validate:justfiles && just check` |
+| Sync upstream template | Terminal | `jj git fetch --remote upstream && jj rebase -s 'fork_point(master, main@upstream)+' -d main@upstream` (see README) |
 
 ---
 
