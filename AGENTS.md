@@ -138,6 +138,22 @@ When implementing customizations, prefer this order:
 
 ---
 
+## Validation & Upstream Sync
+
+Local validation **must** match CI. The canonical entry points are:
+
+| Purpose | Command |
+| --- | --- |
+| Pre-commit (yaml/json/toml + Brewfile) | `pre-commit run --all-files` |
+| Full validator suite (same as CI) | `mise run validate:<name>` for each — `brewfiles`, `flatpaks`, `justfiles`, `shell-scripts`, `renovate` |
+| Format justfiles | `just fix` |
+
+`jj`-based upstream sync with `projectbluefin/finpilot` is documented in
+[`README.md`](README.md#syncing-upstream-template) — this is the only blessed
+flow for pulling template changes. Never rebase by hand.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Cause | Solution |
