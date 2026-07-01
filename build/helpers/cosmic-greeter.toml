@@ -1,0 +1,13 @@
+# NOTE: vt = "next" forces a VT switch during login to give the DRM race
+# condition another chance to land correctly.
+# See: https://github.com/pop-os/cosmic-greeter/issues/441
+
+[terminal]
+vt = "next"
+
+[general]
+service = "cosmic-greeter"
+
+[default_session]
+command = "cosmic-greeter-start"
+user = "cosmic-greeter"
