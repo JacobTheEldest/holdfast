@@ -53,6 +53,13 @@ exec-arg=''
 EOF
 dconf update
 
+# Add homebrew-sourced tools to system PATH for non-interactive sessions
+mkdir -p /usr/etc/environment.d/
+cat > /usr/etc/environment.d/system-path.conf << 'EOF'
+# Mirrors the linuxbrew + system base paths from /usr/etc/profile.d/brew.sh
+PATH=/home/linuxbrew/.linuxbrew/sbin:/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/bin
+EOF
+
 echo "::endgroup::"
 
 # Restore default glob behavior
