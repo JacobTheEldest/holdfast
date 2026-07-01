@@ -6,6 +6,8 @@
 
 set -eoux pipefail
 
+USE_COSMIC_WORKAROUND=true
+
 REMOVE_GNOME=true
 # false:
 # - Keep GDM as the display manager
@@ -81,19 +83,6 @@ ls -la /usr/share/wayland-sessions/ || true
 
 echo "::endgroup::"
 
-echo "::group:: Add COSMIC session registration for GDM"
-# Without X-GDM-SessionRegisters=true, logind never marks the session active
-# and cosmic-comp cannot acquire DRM master - causes immediate freeze on login
-if [[ -f /usr/share/wayland-sessions/cosmic.desktop ]]; then
-  # Check if keys already exist to avoid duplicates
-  if ! grep -q 'X-GDM-SessionRegisters' /usr/share/wayland-sessions/cosmic.desktop; then
-    echo "X-GDM-SessionRegisters=true" >> /usr/share/wayland-sessions/cosmic.desktop
-    echo "X-GDM-CanRunHeadless=true" >> /usr/share/wayland-sessions/cosmic.desktop
-    echo "Added GDM session registration keys to cosmic.desktop"
-  fi
-fi
-echo "::endgroup::"
-
 if [[ "$REMOVE_GNOME" == "true" ]]; then
   echo "::group:: Remove GNOME Desktop (COSMIC-only image)"
 
@@ -108,6 +97,28 @@ if [[ "$REMOVE_GNOME" == "true" ]]; then
 
   # Use cosmic-greeter as the replacement display manager.
   systemctl enable cosmic-greeter
+
+  echo "::endgroup::"
+else
+  if [[ "$USE_COSMIC_WORKAROUND" == "true" ]]; then
+    echo "::group:: Add COSMIC session registration for GDM"
+    # Without X-GDM-SessionRegisters=true, logind never marks the session active
+    # and cosmic-comp cannot acquire DRM master - causes immediate freeze on login
+    if [[ -f /usr/share/wayland-sessions/cosmic.desktop ]]; then
+      # Check if keys already exist to avoid duplicates
+      if ! grep -q 'X-GDM-SessionRegisters' /usr/share/wayland-sessions/cosmic.desktop; then
+        echo "X-GDM-SessionRegisters=true" >> /usr/share/wayland-sessions/cosmic.desktop
+        echo "X-GDM-CanRunHeadless=true" >> /usr/share/wayland-sessions/cosmic.desktop
+        echo "Added GDM session registration keys to cosmic.desktop"
+      fi
+    fi
+    echo "::endgroup::"
+  fi
+fi
+
+if [[ "$USE_COSMIC_WORKAROUND" == "true" ]]; then
+
+  echo "::group:: Configure cosmic-greeter user groups"
 
   # Ensure the cosmic-greeter user is a member of the video and render groups.
   # The package's /usr/lib/sysusers.d/cosmic-greeter.conf declares
@@ -187,15 +198,15 @@ EOF
   # See: https://github.com/pop-os/cosmic-greeter/issues/441
   mkdir -p /etc/greetd/
   cat > /etc/greetd/cosmic-greeter.toml << 'EOF'
-  [terminal]
-  vt = "next"
+[terminal]
+vt = "next"
 
-  [general]
-  service = "cosmic-greeter"
+[general]
+service = "cosmic-greeter"
 
-  [default_session]
-  command = "cosmic-greeter-start"
-  user = "cosmic-greeter"
+[default_session]
+command = "cosmic-greeter-start"
+user = "cosmic-greeter"
 EOF
 
   echo "::endgroup::"
