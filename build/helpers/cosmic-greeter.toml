@@ -1,9 +1,13 @@
-# NOTE: vt = "next" forces a VT switch during login to give the DRM race
-# condition another chance to land correctly.
+# NOTE: `vt = "next"` and `switch = true` force a VT switch during login to give
+# the DRM race condition another chance to land correctly.
+# This works around greetd retaining session leadership after login, preventing
+# cosmic-comp from becoming DRM master.
 # See: https://github.com/pop-os/cosmic-greeter/issues/441
+# See: https://github.com/pop-os/cosmic-comp/issues/2331
 
 [terminal]
 vt = "next"
+switch = true
 
 [general]
 service = "cosmic-greeter"
