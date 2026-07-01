@@ -1,0 +1,14 @@
+[Unit]
+Description=Add cosmic-greeter to video and render groups
+Documentation=https://github.com/pop-os/cosmic-greeter/issues/441
+After=systemd-sysusers.service
+Before=cosmic-greeter.service
+ConditionPathExists=/var/lib/cosmic-greeter
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/holdfast-cosmic-greeter-groups
+
+[Install]
+WantedBy=multi-user.target
