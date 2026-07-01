@@ -124,15 +124,40 @@ Automatic updates are handled by [uupd](https://github.com/ublue-os/uupd). It ru
 
 1. [Rebase](#rebase-from-another-atomic-os-image) or [update](#update) to the new image as needed.
 
-### Local Testing
+### Testing
 
 #### Test on your hardware
 
-1. Build the image container image locally:
+1. Build a testing image with your changes
 
-    ```bash
-    just build
-    ```
+    1. [Option 1] Build locally
+
+        ```bash
+        podman build -t holdfast:testing .
+        
+        # Add `--pull` to refresh the base image and/or `--no-cache` to rebuild every layer
+        podman build --pull --no-cache -t holdfast:testing .
+
+        # Copy the locally built image into root storage
+        sudo podman image scp \
+        $(id -un)@localhost::localhost/holdfast:testing \
+        root@localhost::
+        
+        # Verify the image landed
+        sudo podman images localhost/holdfast
+        ```
+
+    1. [Option 2] Build in CI
+
+        ```bash
+        jj bookmark create "example-branch"
+        jj git push
+
+        gh pr create --base master --head example-branch --fill
+
+        # find image tag for your PR build. (e.g. pr-101.2)
+        skopeo list-tags docker://ghcr.io/jacobtheeldest/holdfast
+        ```
 
 1. Pin the current known-good deployment **before** switching.
 
@@ -143,27 +168,30 @@ Automatic updates are handled by [uupd](https://github.com/ublue-os/uupd). It ru
     sudo ostree admin status       # Confirm "Pinned: yes" on the booted entry
     ```
 
-1. Copy the locally built image into root storage:
+1. Switch to the testing image and boot into it:
 
     ```bash
-    sudo podman image scp \
-      $(id -un)@localhost::localhost/holdfast:stable \
-      root@localhost::
-    sudo podman images localhost/holdfast # Verify the image landed
-    ```
+    # If building locally:
+    sudo bootc switch --transport containers-storage localhost/holdfast:testing
 
-1. Switch to the local image and boot into it:
+    # If pulling from GHCR:
+    sudo bootc switch ghcr.io/jacobtheeldest/holdfast:pr-101.2
 
-    ```bash
-    sudo bootc switch --transport containers-storage localhost/holdfast:stable
-    sudo bootc status # Confirm it's staged and the pinned image is intact
+    # Confirm it's staged and the pinned image is intact
+    sudo bootc status
+
     sudo systemctl reboot
     ```
 
 1. Roll back if necessary by selecting the pinned known-good entry at the boot menu or staging it from a working system:
 
     ```bash
-    sudo bootc switch --transport registry ghcr.io/jacobtheeldest/holdfast:stable
+    # Get the pinned deployment's hash (omit the `.n` suffix)
+    sudo ostree admin status
+
+    # Deploy the pinned deployment
+    sudo ostree admin deploy <pinned-hash>
+
     sudo systemctl reboot
     ```
 
