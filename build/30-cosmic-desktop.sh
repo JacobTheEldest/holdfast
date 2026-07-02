@@ -8,7 +8,7 @@ set -eoux pipefail
 
 USE_COSMIC_WORKAROUND=true
 
-REMOVE_GNOME=true
+REMOVE_GNOME=false
 # false:
 # - Keep GDM as the display manager
 # - Gnome and Cosmic are both selectable from the login screen
