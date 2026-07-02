@@ -1,0 +1,19 @@
+[Unit]
+Description=Unbind kernel framebuffer console from GPU
+Documentation=https://github.com/pop-os/cosmic-comp/issues/2331
+# Run after the virtual console is set up (which creates the vtcon device)
+# and before any display manager / greeter starts.
+After=systemd-vconsole-setup.service
+Before=display-manager.service cosmic-greeter.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# The kernel framebuffer console holds the DRM device open, preventing
+# cosmic-comp from doing page flips and causing "Permission denied (os
+# error 13)" errors on AMD GPUs (e.g. Framework 780M).
+# See: https://github.com/pop-os/cosmic-comp/issues/2331
+ExecStart=/usr/bin/bash -c 'echo 0 > /sys/class/vtconsole/vtcon1/bind'
+
+[Install]
+WantedBy=multi-user.target
