@@ -8,7 +8,7 @@ set -eoux pipefail
 
 USE_COSMIC_WORKAROUND=true
 
-REMOVE_GNOME=true
+REMOVE_GNOME=false
 # false:
 # - Keep GDM as the display manager
 # - Gnome and Cosmic are both selectable from the login screen
@@ -129,6 +129,19 @@ if [[ "$USE_COSMIC_WORKAROUND" == "true" ]]; then
   echo "::group:: Configure cosmic-greeter VT switch"
   mkdir -p /etc/greetd/
   install -m 0644 /ctx/build/helpers/cosmic-greeter.toml /etc/greetd/cosmic-greeter.toml
+
+  echo "::endgroup::"
+
+  echo "::group:: Unbind kernel framebuffer console"
+  # The kernel framebuffer console holds the DRM device open, preventing
+  # cosmic-comp from doing page flips and causing "Permission denied
+  # (os error 13)" errors on AMD GPUs (e.g. Framework 780M).
+  # See: https://github.com/pop-os/cosmic-comp/issues/2331
+  install -m 0644 /ctx/build/helpers/holdfast-unbind-framebuffer.service /usr/lib/systemd/system/holdfast-unbind-framebuffer.service
+  systemctl enable holdfast-unbind-framebuffer.service
+  # Force cosmic-greeter to wait for the framebuffer unbind
+  mkdir -p /usr/lib/systemd/system/cosmic-greeter.service.d
+  install -m 0644 /ctx/build/helpers/cosmic-greeter.service.d/holdfast-framebuffer.conf /usr/lib/systemd/system/cosmic-greeter.service.d/holdfast-framebuffer.conf
 
   echo "::endgroup::"
 fi
