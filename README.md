@@ -155,6 +155,11 @@ Automatic updates are handled by [uupd](https://github.com/ublue-os/uupd). It ru
 
         gh pr create --base master --head example-branch --fill
 
+        # Track build progress
+        gh run list --workflow build.yml
+        gh run watch <run_id>
+        gh run view <run_id>
+
         # find image tag for your PR build. (e.g. pr-101.2)
         skopeo list-tags docker://ghcr.io/jacobtheeldest/holdfast
         ```
