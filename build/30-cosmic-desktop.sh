@@ -110,25 +110,6 @@ if [[ "$REMOVE_GNOME" == "true" ]]; then
   systemctl enable cosmic-greeter
 
   echo "::endgroup::"
-
-  echo "::group:: Configure cosmic-greeter VT switch"
-  # NOTE: vt = "next" forces a VT switch during login to give the DRM race
-  # condition another chance to land correctly.
-  # See: https://github.com/pop-os/cosmic-greeter/issues/441
-  mkdir -p /etc/greetd/
-  cat > /etc/greetd/cosmic-greeter.toml << 'EOF'
-  [terminal]
-  vt = "next"
-
-  [general]
-  service = "cosmic-greeter"
-
-  [default_session]
-  command = "cosmic-greeter-start"
-  user = "cosmic-greeter"
-EOF
-
-  echo "::endgroup::"
 fi
 
-echo "COSMIC desktop installed. Select session at the login screen"
+echo "COSMIC desktop installed — select session at the login screen"
