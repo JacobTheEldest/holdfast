@@ -53,6 +53,17 @@ exec-arg=''
 EOF
 dconf update
 
+# Disable AMD Panel Self-Refresh to prevent a known DMCUB firmware hang
+# that freezes the desktop on AMD Phoenix/RDNA 3 iGPUs (e.g. Framework 16
+# 780M) when running COSMIC. Upstream cosmic-comp triggers the hang via
+# unnecessary atomic_commit(ALLOW_MODESET) on udev events; this kernel
+# parameter avoids the underlying firmware bug. Safe to apply on non-AMD
+# hardware (it's a no-op). See:
+#   https://github.com/pop-os/cosmic-comp/issues/2375
+#   https://github.com/pop-os/cosmic-comp/pull/2382
+mkdir -p /usr/lib/bootc/kargs.d
+install -m 0644 /ctx/build/helpers/kargs.d/99-amdgpu-psr.conf /usr/lib/bootc/kargs.d/99-amdgpu-psr.conf
+
 echo "::endgroup::"
 
 # Restore default glob behavior
