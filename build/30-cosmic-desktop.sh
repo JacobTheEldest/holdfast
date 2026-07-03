@@ -6,8 +6,6 @@
 
 set -eoux pipefail
 
-USE_COSMIC_WORKAROUND=true
-
 REMOVE_GNOME=true
 # false:
 # - Keep GDM as the display manager
@@ -40,8 +38,6 @@ COSMIC_PACKAGES=(
   cosmic-osd
   cosmic-app-library
   cosmic-workspaces
-  cosmic-idle
-  cosmic-randr
   xdg-desktop-portal-cosmic
 )
 
@@ -99,38 +95,6 @@ if [[ "$REMOVE_GNOME" == "true" ]]; then
   systemctl enable cosmic-greeter
 
   echo "::endgroup::"
-else
-  if [[ "$USE_COSMIC_WORKAROUND" == "true" ]]; then
-    echo "::group:: Add COSMIC session registration for GDM"
-    # Without X-GDM-SessionRegisters=true, logind never marks the session active
-    # and cosmic-comp cannot acquire DRM master - causes immediate freeze on login
-    if [[ -f /usr/share/wayland-sessions/cosmic.desktop ]]; then
-      # Check if keys already exist to avoid duplicates
-      if ! grep -q 'X-GDM-SessionRegisters' /usr/share/wayland-sessions/cosmic.desktop; then
-        echo "X-GDM-SessionRegisters=true" >> /usr/share/wayland-sessions/cosmic.desktop
-        echo "X-GDM-CanRunHeadless=true" >> /usr/share/wayland-sessions/cosmic.desktop
-        echo "Added GDM session registration keys to cosmic.desktop"
-      fi
-    fi
-    echo "::endgroup::"
-  fi
 fi
 
-if [[ "$USE_COSMIC_WORKAROUND" == "true" ]]; then
-
-  echo "::group:: Configure cosmic-greeter user groups"
-
-  install -m 0755 /ctx/build/helpers/holdfast-cosmic-greeter-groups /usr/bin/holdfast-cosmic-greeter-groups
-  install -m 0644 /ctx/build/helpers/holdfast-cosmic-greeter-groups.service /usr/lib/systemd/system/holdfast-cosmic-greeter-groups.service
-  systemctl enable holdfast-cosmic-greeter-groups.service
-
-  echo "::endgroup::"
-
-  echo "::group:: Configure cosmic-greeter VT switch"
-  mkdir -p /etc/greetd/
-  install -m 0644 /ctx/build/helpers/cosmic-greeter.toml /etc/greetd/cosmic-greeter.toml
-
-  echo "::endgroup::"
-fi
-
-echo "COSMIC desktop installed. Select session at the login screen"
+echo "COSMIC desktop installed — select session at the login screen"
