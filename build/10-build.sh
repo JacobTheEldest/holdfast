@@ -64,6 +64,20 @@ dconf update
 mkdir -p /usr/lib/bootc/kargs.d
 install -m 0644 /ctx/build/helpers/kargs.d/99-amdgpu-psr.conf /usr/lib/bootc/kargs.d/99-amdgpu-psr.conf
 
+# Disable cosmic-comp direct scanout to work around an AMD Phoenix
+# firmware bug that causes a black screen after login. The env var
+# must be set on the cosmic-greeter.service unit (not via
+# /usr/lib/environment.d/) because greetd is a system service and
+# does not inherit user-level environment.d entries. The env var is
+# inherited by the spawned cosmic-greeter-start process and the user
+# session. The drop-in with this env var is installed by
+# build/30-cosmic-desktop.sh at:
+#   build/helpers/cosmic-greeter.service.d/10-holdfast-restart.conf
+# Confirmed working on Fedora COSMIC Atomic (Ryzen 7 7840U) and our
+# AMD 780M. See:
+#   https://www.reddit.com/r/Fedora/comments/1vhwa1h/
+#   https://github.com/pop-os/cosmic-comp/issues/2375
+
 echo "::endgroup::"
 
 # Restore default glob behavior
