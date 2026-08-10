@@ -94,6 +94,21 @@ if [[ "$REMOVE_GNOME" == "true" ]]; then
   # Use cosmic-greeter as the replacement display manager.
   systemctl enable cosmic-greeter
 
+  # Work around a known upstream crash in cosmic-comp 1.0.12+ where the
+  # greeter's compositor SIGABRTs on exit (race with Mesa's atexit
+  # handler). The default restart policy gives up after 5 quick crashes
+  # and leaves the user at a black screen. This drop-in uses exponential
+  # backoff and a much higher burst limit so the service keeps trying.
+  # See: https://github.com/pop-os/cosmic-comp/issues/2375
+  # Applies to both cosmic-greeter.service (the DM) and
+  # cosmic-greeter-daemon.service (the lock screen) since both
+  # invoke cosmic-comp and are subject to the same crash.
+  for unit in cosmic-greeter.service cosmic-greeter-daemon.service; do
+    install -D -m 0644 \
+      /ctx/build/helpers/cosmic-greeter.service.d/10-holdfast-restart.conf \
+      "/usr/lib/systemd/system/${unit}.d/10-holdfast-restart.conf"
+  done
+
   echo "::endgroup::"
 fi
 
